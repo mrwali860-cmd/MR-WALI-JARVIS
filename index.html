@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>MR WALI JARVIS</title>
+
+<style>
+body {
+  margin: 0;
+  background: #050505;
+  color: white;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  width: 90%;
+  max-width: 800px;
+}
+
+h1 {
+  text-align: center;
+  letter-spacing: 3px;
+}
+
+.status {
+  text-align: center;
+  color: #00ff88;
+  margin-bottom: 30px;
+}
+
+#chat {
+  height: 400px;
+  overflow-y: auto;
+  border: 1px solid #333;
+  padding: 20px;
+  margin-bottom: 15px;
+}
+
+.message {
+  margin-bottom: 15px;
+  white-space: pre-wrap;
+}
+
+.user {
+  color: #00aaff;
+}
+
+.jarvis {
+  color: #00ff88;
+}
+
+.input-area {
+  display: flex;
+  gap: 10px;
+}
+
+input {
+  flex: 1;
+  padding: 15px;
+  font-size: 16px;
+}
+
+button {
+  padding: 15px 25px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>MR WALI JARVIS</h1>
+
+<div class="status">? SYSTEM ONLINE</div>
+
+<div id="chat">
+<div class="message jarvis">
+JARVIS: Good. I am online. What do we execute?
+</div>
+</div>
+
+<div class="input-area">
+<input
+id="message"
+type="text"
+placeholder="Give Jarvis a command..."
+onkeypress="if(event.key === 'Enter') sendMessage()"
+/>
+
+<button onclick="sendMessage()">EXECUTE</button>
+</div>
+
+</div>
+
+<script>
+
+async function sendMessage() {
+
+  const input = document.getElementById("message");
+  const chat = document.getElementById("chat");
+
+  const message = input.value.trim();
+
+  if (!message) return;
+
+  chat.innerHTML += `
+    <div class="message user">
+      YOU: ${message}
+    </div>
+  `;
+
+  input.value = "";
+
+  chat.innerHTML += `
+    <div class="message jarvis" id="thinking">
+      JARVIS: Processing...
+    </div>
+  `;
+
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+
+    const response = await fetch("/ask", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: message
+      })
+    });
+
+    const data = await response.json();
+
+    document.getElementById("thinking").remove();
+
+    chat.innerHTML += `
+      <div class="message jarvis">
+        JARVIS: ${data.jarvis || data.error}
+      </div>
+    `;
+
+  } catch (error) {
+
+    document.getElementById("thinking").remove();
+
+    chat.innerHTML += `
+      <div class="message jarvis">
+        JARVIS ERROR: ${error.message}
+      </div>
+    `;
+
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+
+}
+
+</script>
+
+</body>
+</html>

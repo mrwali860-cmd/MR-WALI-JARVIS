@@ -1,0 +1,113 @@
+{
+  "memories": [
+    {
+      "message": "My main goal is to build a profitable AI automation business.",
+      "type": "GENERAL_COMMAND",
+      "action": "ANALYZE",
+      "timestamp": "2026-08-26T06:24:05.582Z"
+    },
+    {
+      "message": "show my memory",
+      "type": "MEMORY_RETRIEVAL",
+      "action": "SHOW_MEMORY",
+      "timestamp": "2026-08-26T06:37:09.792Z"
+    },
+    {
+      "message": "what is my main goal?",
+      "type": "GOAL_RETRIEVAL",
+      "action": "FIND_MAIN_GOAL",
+      "timestamp": "2026-08-26T06:37:43.721Z"
+    },
+    {
+      "message": "i am who",
+      "type": "GENERAL_COMMAND",
+      "action": "ANALYZE",
+      "timestamp": "2026-08-26T06:39:46.463Z"
+    },
+    {
+      "message": "I need to get my first AI automation client.",
+      "category": "TASK",
+      "timestamp": "2026-08-26T06:47:06.801Z"
+    },
+    {
+      "message": "I need to get my first AI automation client.",
+      "category": "TASK",
+      "timestamp": "2026-08-26T12:31:02.862Z"
+    },
+    {
+      "message": "I need to get my first AI automation client.",
+      "category": "TASK",
+      "timestamp": "2026-08-26T12:35:32.279Z"
+    },
+    {
+      "message": "I need to get my first AI automation client.",
+      "category": "GOAL",
+      "timestamp": "2026-08-26T12:40:59.460Z"
+    },
+    {
+      "message": "Start prospect discovery",
+      "category": "TASK",
+      "timestamp": "2026-08-26T12:42:04.630Z"
+    },
+    {
+      "message": "I need to get my first AI automation client.",
+      "category": "GOAL",
+      "timestamp": "2026-08-26T17:18:57.640Z"
+    },
+    {
+      "message": "Start prospect discovery.",
+      "category": "TASK",
+      "timestamp": "2026-08-26T17:19:18.694Z"
+    },
+    {
+      "message": "I need to get my first AI automation client.",
+      "category": "GOAL",
+      "timestamp": "2026-08-27T05:20:10.358Z"
+    },
+    {
+      "message": "Start prospect discovery.",
+      "category": "TASK",
+      "timestamp": "2026-08-27T05:20:26.813Z"
+    },
+    {
+      "message": "Start prospect discovery.",
+      "category": "TASK",
+      "timestamp": "2026-08-27T05:42:03.303Z"
+    },
+    {
+      "message": "Start prospect discovery.",
+      "category": "TASK",
+      "timestamp": "2026-08-27T05:57:22.821Z"
+    },
+    {
+      "message": "Start prospect discovery.",
+      "category": "TASK",
+      "timestamp": "2026-08-27T06:01:12.425Z"
+    },
+    {
+      "message": "Start prospect discovery.",
+      "category": "TASK",
+      "timestamp": "2026-08-27T06:41:42.118Z"
+    },
+    {
+      "message": "start prospect discovery.",
+      "category": "TASK",
+      "timestamp": "2026-08-27T06:43:43.904Z"
+    },
+    {
+      "message": "start prospect discovery",
+      "category": "TASK",
+      "timestamp": "2026-08-27T06:48:25.194Z"
+    },
+    {
+      "message": "start prospect discovery.",
+      "category": "TASK",
+      "timestamp": "2026-08-27T06:50:47.511Z"
+    },
+    {
+      "message": "start prospect discovery",
+      "category": "TASK",
+      "timestamp": "2026-08-27T07:08:42.602Z"
+    }
+  ]
+}

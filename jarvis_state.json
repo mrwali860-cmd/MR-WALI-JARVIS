@@ -1,0 +1,61 @@
+{
+  "activeMission": {
+    "id": "FIRST_AI_AUTOMATION_CLIENT",
+    "name": "Get First AI Automation Client",
+    "status": "ACTIVE",
+    "currentStage": "PROSPECT_DISCOVERY",
+    "targetMarket": "Dubai Real Estate",
+    "prospectTarget": 20,
+    "prospectsFound": 3,
+    "startedAt": "2026-08-27T05:20:10.388Z"
+  },
+  "tasks": [
+    {
+      "id": "PROSPECT_DISCOVERY",
+      "name": "Find 20 Dubai real estate prospects",
+      "status": "COMPLETE"
+    },
+    {
+      "id": "QUALIFICATION",
+      "name": "Qualify prospects",
+      "status": "LOCKED"
+    },
+    {
+      "id": "DECISION_MAKER",
+      "name": "Identify decision makers",
+      "status": "LOCKED"
+    },
+    {
+      "id": "OUTREACH",
+      "name": "Prepare personalized outreach",
+      "status": "LOCKED"
+    }
+  ],
+  "updatedAt": "2026-08-27T07:08:42.612Z",
+  "prospects": [
+    {
+      "name": "Dubai Real Estate Prospect 1",
+      "address": "Dubai, UAE",
+      "phone": "",
+      "website": "",
+      "rating": null,
+      "source": "Manual Discovery Queue"
+    },
+    {
+      "name": "Dubai Real Estate Prospect 2",
+      "address": "Dubai, UAE",
+      "phone": "",
+      "website": "",
+      "rating": null,
+      "source": "Manual Discovery Queue"
+    },
+    {
+      "name": "Dubai Real Estate Prospect 3",
+      "address": "Dubai, UAE",
+      "phone": "",
+      "website": "",
+      "rating": null,
+      "source": "Manual Discovery Queue"
+    }
+  ]
+}
