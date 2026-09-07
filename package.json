@@ -7,6 +7,6 @@
     "path": "^0.12.7"
   },
   "scripts": {
-    "test": "node ./src/business/service-manager-test.js && node ./src/business/task-manager-test.js && node ./src/business/service-catalog-test.js && node ./src/business/first-service-contract-test.js && node ./src/business/service-manager-integration-test.js && node ./src/business/risk-approval-policy-test.js && node ./src/business/orchestrator-test.js"
+    "test": "node ./src/business/service-manager-test.js && node ./src/business/task-manager-test.js && node ./src/business/service-catalog-test.js && node ./src/business/first-service-contract-test.js && node ./src/business/service-manager-integration-test.js && node ./src/business/risk-approval-policy-test.js && node ./src/business/orchestrator-test.js && node ./src/business/qa-test.js"
   }
 }
