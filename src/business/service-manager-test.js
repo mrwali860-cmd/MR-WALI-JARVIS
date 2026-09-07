@@ -167,12 +167,33 @@ test("Service lifecycle completes", () => {
 
     const approval = manager.execute({
         action: "APPROVE_SERVICE",
-        service_id: TEST_SERVICE_ID
+        service_id: TEST_SERVICE_ID,
+        approval_context: {
+            status: "APPROVED",
+            approved: true,
+            source: "SERVICE_MANAGER_TEST",
+            request_id: `${TEST_SERVICE_ID}_APPROVAL`
+        }
     });
 
     assert(
         approval.success === true,
         "Approval failed"
+    );
+
+    assert(
+        approval.service.approval.status === "APPROVED",
+        "Approval should be recorded as APPROVED"
+    );
+
+    assert(
+        approval.service.status === "WAITING_FOR_APPROVAL",
+        "Approval should not mark service DELIVERED"
+    );
+
+    assert(
+        approval.service.delivery.status === "READY",
+        "Delivery should become READY after approval"
     );
 
     const delivery = manager.execute({
