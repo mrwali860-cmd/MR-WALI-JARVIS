@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Prove that the selected Digital Services lifecycle can move through one controlled path without bypassing its business gates.
+Lock the verified Digital Services lifecycle as the canonical internal business path and make its safety boundaries explicit.
 
 ## Canonical Flow
 
@@ -20,7 +20,7 @@ Prove that the selected Digital Services lifecycle can move through one controll
 - **Delivery**: requires QA PASS and explicit client approval APPROVED.
 - **Revenue**: requires DELIVERED status plus confirmed payment and valid transaction identity.
 
-## V1 Invariants
+## Verified Lifecycle Invariants
 
 1. Tasks cannot execute before dependencies are complete.
 2. Protected external actions cannot execute without required approval.
@@ -33,9 +33,9 @@ Prove that the selected Digital Services lifecycle can move through one controll
 9. Unknown risk actions fail closed.
 10. The E2E test uses deterministic simulated execution only; it does not send real messages, book real appointments, move money, or delete data.
 
-## Verification Contract
+## E2E Verification Coverage
 
-The integration test must verify:
+The integration test verifies:
 
 - service creation and READY state;
 - ten-task dependency chain;
@@ -47,6 +47,10 @@ The integration test must verify:
 - Revenue PAID/RECORDED after confirmed payment;
 - all ten lifecycle tasks reach COMPLETED in the controlled test;
 - unpaid delivery remains Revenue PENDING.
+
+## Known Hardening Item
+
+`ServiceManager.approveService()` is a legacy lifecycle shortcut that can directly set approval/delivery state without independently proving QA PASS and explicit client approval. This is **not** treated as permission to bypass the Client Approval component. A future hardening change should make the canonical approval transition depend on the explicit Client Approval result rather than silently relying on this legacy shortcut.
 
 ## Production Boundary
 
