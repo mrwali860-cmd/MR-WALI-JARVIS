@@ -24,7 +24,7 @@ const Revenue = require("./revenue");
     const serviceId = `E2E_${Date.now()}`;
     const requestId = `${serviceId}_REQUEST`;
 
-    // 1. SERVICE -> PLAN -> TASKS
+    // SERVICE -> PLAN -> TASKS
     const plan = integration.createServicePlan({
         service_id: serviceId,
         client: "E2E Test Client",
@@ -32,7 +32,6 @@ const Revenue = require("./revenue");
         revenue_amount: 5000,
         currency: "USD"
     });
-
     assert.strictEqual(plan.success, true);
     assert.strictEqual(plan.task_count, 10);
 
@@ -46,7 +45,7 @@ const Revenue = require("./revenue");
         assert.deepStrictEqual(tasks[i].dependencies, [tasks[i - 1].task_id]);
     }
 
-    // 2. ORCHESTRATOR -> RISK -> EXECUTION
+    // ORCHESTRATOR -> RISK -> EXECUTION
     const orchestrator = new Orchestrator({
         serviceManager,
         taskManager,
@@ -58,7 +57,6 @@ const Revenue = require("./revenue");
         })
     });
 
-    // Risk gate must block the booking action until explicit approval.
     const riskWait = riskPolicy.evaluate({
         action: "BOOKING_EXECUTION",
         approval_context: {}
@@ -76,10 +74,10 @@ const Revenue = require("./revenue");
                 : {}
         });
         assert.strictEqual(result.status, "COMPLETED");
-        assert.strictEqual(taskManager.getTask(task.task_id).status, "COMPLETED");
     }
+    assert.ok(tasks.slice(0, 5).every((task) => taskManager.getTask(task.task_id).status === "COMPLETED"));
 
-    // 3. QA
+    // QA -> CLIENT APPROVAL
     serviceManager.startQA(serviceId);
     const qaResult = qa.execute({
         action: "EVALUATE",
@@ -88,15 +86,14 @@ const Revenue = require("./revenue");
         request_id: requestId,
         expected_output: { booking: "confirmed" },
         actual_output: { booking: "confirmed" },
-        acceptance_criteria: [
-            { name: "booking-confirmed", passed: true }
-        ],
+        acceptance_criteria: [{ name: "booking-confirmed", passed: true }],
         execution_status: "COMPLETED"
     });
     assert.strictEqual(qaResult.decision, "PASS");
     serviceManager.completeQA(serviceId, true, qaResult);
+    assert.strictEqual(serviceManager.getService(serviceId).qa.status, "PASSED");
+    assert.strictEqual(serviceManager.getService(serviceId).status, "WAITING_FOR_APPROVAL");
 
-    // 4. CLIENT APPROVAL
     const approval = clientApproval.execute({
         action: "DECIDE",
         service_id: serviceId,
@@ -106,7 +103,7 @@ const Revenue = require("./revenue");
     });
     assert.strictEqual(approval.decision, "APPROVED");
 
-    // 5. DELIVERY
+    // DELIVERY -> REVENUE
     const deliveryResult = delivery.execute({
         action: "DELIVER",
         service_id: serviceId,
@@ -117,7 +114,12 @@ const Revenue = require("./revenue");
     });
     assert.strictEqual(deliveryResult.delivery_status, "DELIVERED");
 
-    // 6. REVENUE
+    // The service-level state is advanced only after the dedicated delivery gate passes.
+    serviceManager.approveService(serviceId);
+    serviceManager.completeDelivery(serviceId);
+    assert.strictEqual(serviceManager.getService(serviceId).status, "COMPLETED");
+    assert.strictEqual(serviceManager.getService(serviceId).delivery.status, "DELIVERED");
+
     const revenueResult = revenue.execute({
         action: "RECORD",
         service_id: serviceId,
@@ -131,14 +133,15 @@ const Revenue = require("./revenue");
     assert.strictEqual(revenueResult.revenue_status, "PAID");
     assert.strictEqual(revenueResult.decision, "RECORDED");
 
-    // 7. Complete the remaining lifecycle tasks using the already-verified gates.
+    serviceManager.recordRevenue(serviceId, revenueResult.amount, revenueResult.currency);
+    assert.strictEqual(serviceManager.getService(serviceId).revenue.status, "RECORDED");
+
+    // Complete the remaining lifecycle tasks after their dedicated gates pass.
     taskManager.completeTask(tasks[5].task_id, { crm_recorded: true });
     taskManager.completeTask(tasks[6].task_id, qaResult);
     taskManager.completeTask(tasks[7].task_id, approval);
     taskManager.completeTask(tasks[8].task_id, deliveryResult);
     taskManager.completeTask(tasks[9].task_id, revenueResult);
-
-    assert.ok(tasks.every((task) => taskManager.getTask(task.task_id).status === "COMPLETED"));
     assert.strictEqual(taskManager.getSummary().by_status.COMPLETED, 10);
 
     // Revenue must never be inferred from delivery alone.
