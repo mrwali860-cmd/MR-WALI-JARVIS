@@ -29,6 +29,10 @@ const approvedByStatus = policy.evaluate({
 });
 assert.equal(approvedByStatus.decision, "ALLOW");
 
+const unknownAction = policy.evaluate({ action: "SOME_UNCLASSIFIED_ACTION" });
+assert.equal(unknownAction.decision, "DENY");
+assert.equal(unknownAction.reason, "UNCLASSIFIED_ACTION");
+
 const missingAction = policy.evaluate({});
 assert.equal(missingAction.decision, "DENY");
 assert.equal(missingAction.reason, "ACTION_REQUIRED");
