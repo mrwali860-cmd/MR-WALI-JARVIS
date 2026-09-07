@@ -1,15 +1,16 @@
 "use strict";
 
 const ComponentContract = require("../../contracts/component-contract");
+const RiskApprovalPolicy = require("./risk-approval-policy");
 
 /**
  * JARVIS Orchestrator Execution Contract V1
  *
  * Coordinates task execution without owning service data or bypassing
- * risk/approval controls. External providers are injected through executor.
+ * the central risk/approval policy. External providers are injected.
  */
 class Orchestrator extends ComponentContract {
-    constructor({ serviceManager, taskManager, executor } = {}) {
+    constructor({ serviceManager, taskManager, executor, riskPolicy } = {}) {
         super({
             id: "ORCHESTRATOR",
             name: "JARVIS Orchestrator",
@@ -22,18 +23,12 @@ class Orchestrator extends ComponentContract {
 
         this.serviceManager = serviceManager;
         this.taskManager = taskManager;
+        this.riskPolicy = riskPolicy || new RiskApprovalPolicy();
         this.executor = executor || (async ({ action, task_id }) => ({
             simulated: true,
             action,
             task_id
         }));
-
-        this.approvalRequiredActions = new Set([
-            "BOOKING_EXECUTION",
-            "EXTERNAL_MESSAGE_SEND",
-            "PAYMENT_OR_MONEY_MOVEMENT",
-            "DATA_DELETION"
-        ]);
     }
 
     getTaskOrThrow(taskId) {
@@ -63,15 +58,6 @@ class Orchestrator extends ComponentContract {
         return { service, task };
     }
 
-    requiresApproval(task, approvalContext = {}) {
-        return this.approvalRequiredActions.has(task.action) ||
-            task.action === "APPOINTMENT_REQUEST" && approvalContext.require_appointment_approval === true;
-    }
-
-    isApproved(approvalContext = {}) {
-        return approvalContext.approved === true || approvalContext.status === "APPROVED";
-    }
-
     async executeTask(input = {}) {
         const { service, task } = this.validateRequest(input);
         const approvalContext = input.approval_context || {};
@@ -89,16 +75,36 @@ class Orchestrator extends ComponentContract {
             };
         }
 
-        if (this.requiresApproval(task, approvalContext) && !this.isApproved(approvalContext)) {
+        const policyDecision = this.riskPolicy.evaluate({
+            action: task.action,
+            approval_context: approvalContext
+        });
+
+        if (policyDecision.decision === "WAIT") {
             this.taskManager.updateTaskStatus(task.task_id, "WAITING_FOR_APPROVAL", {
-                approval_reason: "APPROVAL_REQUIRED",
+                approval_reason: policyDecision.reason,
                 request_id: input.request_id
             });
             return {
                 success: false,
                 status: "WAITING_FOR_APPROVAL",
-                reason: "APPROVAL_REQUIRED",
-                task_id: task.task_id
+                reason: policyDecision.reason,
+                task_id: task.task_id,
+                policy: policyDecision
+            };
+        }
+
+        if (policyDecision.decision === "DENY") {
+            this.taskManager.updateTaskStatus(task.task_id, "FAILED", {
+                blocked_reason: policyDecision.reason,
+                request_id: input.request_id
+            });
+            return {
+                success: false,
+                status: "FAILED",
+                reason: policyDecision.reason,
+                task_id: task.task_id,
+                policy: policyDecision
             };
         }
 
@@ -124,7 +130,8 @@ class Orchestrator extends ComponentContract {
                 success: true,
                 status: "COMPLETED",
                 task: completedTask,
-                result
+                result,
+                policy: policyDecision
             };
         } catch (error) {
             this.taskManager.failTask(task.task_id, error.message || error);
