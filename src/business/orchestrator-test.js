@@ -3,6 +3,7 @@
 const assert = require("assert");
 const ServiceManagerIntegration = require("./service-manager-integration");
 const Orchestrator = require("./orchestrator");
+const RiskApprovalPolicy = require("./risk-approval-policy");
 
 function test(name, fn) {
     try {
@@ -34,9 +35,11 @@ async function asyncTest(name, fn) {
         requirement: "Automate appointment booking"
     });
 
+    const riskPolicy = new RiskApprovalPolicy();
     const orchestrator = new Orchestrator({
         serviceManager: integration.serviceManager,
         taskManager: integration.taskManager,
+        riskPolicy,
         executor: async ({ task }) => ({ executed: task.action })
     });
 
@@ -57,12 +60,12 @@ async function asyncTest(name, fn) {
         assert.strictEqual(result.status, "COMPLETED");
     });
 
-    await asyncTest("Dependency gate blocks later task", async () => {
-        const taskId = plan.task_ids[1];
+    await asyncTest("Dependency gate blocks task whose prerequisite is incomplete", async () => {
+        const taskId = plan.task_ids[2];
         const result = await orchestrator.execute({
             service_id: plan.service_id,
             task_id: taskId,
-            action: "LEAD_QUALIFICATION",
+            action: "APPOINTMENT_REQUEST",
             request_id: "req-002"
         });
         assert.strictEqual(result.success, false);
@@ -112,6 +115,7 @@ async function asyncTest(name, fn) {
         const failingOrchestrator = new Orchestrator({
             serviceManager: failingIntegration.serviceManager,
             taskManager: failingIntegration.taskManager,
+            riskPolicy: new RiskApprovalPolicy(),
             executor: async () => { throw new Error("provider failure"); }
         });
 
