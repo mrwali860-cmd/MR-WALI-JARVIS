@@ -57,6 +57,8 @@ test("Dependencies gate task readiness", () => {
     manager.createTask({ task_id: "TASK_CHILD", dependencies: ["TASK_PARENT"] });
     assert(manager.markReady("TASK_CHILD").status === "BLOCKED", "Incomplete dependency should block task");
     assert(manager.getTask("TASK_CHILD").audit.at(-1).reason === "DEPENDENCIES_NOT_COMPLETE", "Block reason missing");
+    manager.markReady("TASK_PARENT");
+    manager.updateTaskStatus("TASK_PARENT", "RUNNING");
     manager.completeTask("TASK_PARENT", { ok: true });
     assert(manager.markReady("TASK_CHILD").status === "READY", "Completed dependency should release task");
 });
