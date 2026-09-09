@@ -1,2 +1,4 @@
-﻿# JARVIS BUILD MARKER
-# Core acquisition engine is being rebuilt.
+# JARVIS BUILD MARKER
+# Dashboard Tasks V1 CI verification trigger.
+# Prior implementation SHA: 86c16d75685d7ab6046ef9231556ce4c43ba4610
+# Verification is valid only when the push-triggered CI run for the new exact SHA completes successfully.
