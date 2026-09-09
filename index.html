@@ -6,145 +6,48 @@
 <title>MR WALI JARVIS — Control Center</title>
 <style>
 :root { --bg:#07090d; --panel:#10141b; --panel2:#151b24; --text:#eef2f7; --muted:#8d98a8; --line:#252d38; --good:#39e58c; --warn:#ffd166; --bad:#ff6b6b; --accent:#5aa9ff; }
-* { box-sizing:border-box; }
-body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:Inter,Arial,sans-serif; }
-.shell { width:min(1200px,94%); margin:0 auto; padding:28px 0 40px; }
-header { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:24px; }
-h1 { margin:0; font-size:24px; letter-spacing:2px; }
-.subtitle { color:var(--muted); margin-top:6px; font-size:13px; }
+* { box-sizing:border-box; } body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:Inter,Arial,sans-serif; }
+.shell { width:min(1200px,94%); margin:0 auto; padding:28px 0 40px; } header { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:24px; }
+h1 { margin:0; font-size:24px; letter-spacing:2px; } .subtitle,.muted { color:var(--muted); } .subtitle { margin-top:6px; font-size:13px; }
 .online { border:1px solid #214b37; background:#0c1b14; color:var(--good); padding:9px 13px; border-radius:999px; font-size:12px; font-weight:700; }
-.grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-.panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; }
-.card-label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1px; }
-.value { font-size:30px; font-weight:800; margin-top:8px; }
-.layout { display:grid; grid-template-columns:1.4fr .9fr; gap:14px; margin-top:14px; }
-.panel h2 { margin:0 0 15px; font-size:15px; }
-.row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
-.row:last-child { border-bottom:0; }
-.badge { padding:5px 9px; border-radius:7px; font-size:11px; font-weight:700; background:var(--panel2); }
-.good { color:var(--good); } .warn { color:var(--warn); } .bad { color:var(--bad); } .accent { color:var(--accent); }
-.muted { color:var(--muted); }
-.service { background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:9px; }
-.service-title { font-weight:700; }
-.service-meta { margin-top:5px; color:var(--muted); font-size:12px; }
-.empty { color:var(--muted); padding:12px 0; font-size:13px; }
-.footer { margin-top:14px; color:var(--muted); font-size:11px; text-align:right; }
-@media (max-width:800px) { .grid { grid-template-columns:repeat(2,1fr); } .layout { grid-template-columns:1fr; } header { align-items:flex-start; } }
-@media (max-width:480px) { .grid { grid-template-columns:1fr 1fr; gap:9px; } .panel { padding:14px; } .value { font-size:24px; } h1 { font-size:19px; } }
+.grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; } .panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; }
+.card-label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1px; } .value { font-size:30px; font-weight:800; margin-top:8px; }
+.layout { display:grid; grid-template-columns:1.4fr .9fr; gap:14px; margin-top:14px; } .panel h2 { margin:0 0 15px; font-size:15px; }
+.row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); } .row:last-child { border-bottom:0; }
+.badge { padding:5px 9px; border-radius:7px; font-size:11px; font-weight:700; background:var(--panel2); } .good { color:var(--good); } .warn { color:var(--warn); } .bad { color:var(--bad); } .accent { color:var(--accent); }
+.service { background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:9px; } .service-title { font-weight:700; } .service-meta { margin-top:5px; color:var(--muted); font-size:12px; }
+.empty { color:var(--muted); padding:12px 0; font-size:13px; } .footer { margin-top:14px; color:var(--muted); font-size:11px; text-align:right; }
+.lifecycle { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; } .lifecycle-card { background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:13px; min-height:92px; }
+.lifecycle-card h3 { margin:0 0 9px; font-size:13px; } .lifecycle-status { font-size:12px; font-weight:700; } .lifecycle-detail { margin-top:5px; font-size:11px; color:var(--muted); }
+@media (max-width:800px) { .grid { grid-template-columns:repeat(2,1fr); } .layout { grid-template-columns:1fr; } .lifecycle { grid-template-columns:repeat(2,1fr); } header { align-items:flex-start; } }
+@media (max-width:480px) { .grid { grid-template-columns:1fr 1fr; gap:9px; } .panel { padding:14px; } .value { font-size:24px; } h1 { font-size:19px; } .lifecycle { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <div class="shell">
-<header>
-  <div>
-    <h1>MR WALI JARVIS</h1>
-    <div class="subtitle">Business Operating System — Control Center</div>
-  </div>
-  <div class="online" id="systemState">● CONNECTING</div>
-</header>
-
+<header><div><h1>MR WALI JARVIS</h1><div class="subtitle">Business Operating System — Control Center</div></div><div class="online" id="systemState">● CONNECTING</div></header>
 <section class="grid">
-  <div class="panel"><div class="card-label">System</div><div class="value good" id="systemStatus">—</div><div class="subtitle" id="systemBrain">Loading…</div></div>
-  <div class="panel"><div class="card-label">Services</div><div class="value" id="serviceTotal">—</div><div class="subtitle">Core-owned services</div></div>
-  <div class="panel"><div class="card-label">Tasks</div><div class="value" id="taskTotal">—</div><div class="subtitle">Core-owned tasks</div></div>
-  <div class="panel"><div class="card-label">Blockers</div><div class="value" id="blockerTotal">—</div><div class="subtitle">Needs attention</div></div>
+<div class="panel"><div class="card-label">System</div><div class="value good" id="systemStatus">—</div><div class="subtitle" id="systemBrain">Loading…</div></div>
+<div class="panel"><div class="card-label">Services</div><div class="value" id="serviceTotal">—</div><div class="subtitle">Core-owned services</div></div>
+<div class="panel"><div class="card-label">Tasks</div><div class="value" id="taskTotal">—</div><div class="subtitle">Core-owned tasks</div></div>
+<div class="panel"><div class="card-label">Blockers</div><div class="value" id="blockerTotal">—</div><div class="subtitle">Needs attention</div></div>
 </section>
-
-<section class="layout">
-  <div class="panel">
-    <h2>Services</h2>
-    <div id="services"><div class="empty">Loading services…</div></div>
-  </div>
-  <div class="panel">
-    <h2>Task Status</h2>
-    <div id="tasks"><div class="empty">Loading task status…</div></div>
-  </div>
-</section>
-
-<section class="layout">
-  <div class="panel">
-    <h2>Blockers & Gates</h2>
-    <div id="blockers"><div class="empty">Loading blockers…</div></div>
-  </div>
-  <div class="panel">
-    <h2>Service Status</h2>
-    <div id="serviceStatuses"><div class="empty">Loading…</div></div>
-  </div>
-</section>
-
+<section class="layout"><div class="panel"><h2>Services</h2><div id="services"><div class="empty">Loading services…</div></div></div><div class="panel"><h2>Task Status</h2><div id="tasks"><div class="empty">Loading task status…</div></div></div></section>
+<section class="layout"><div class="panel"><h2>Blockers & Gates</h2><div id="blockers"><div class="empty">Loading blockers…</div></div></div><div class="panel"><h2>Service Status</h2><div id="serviceStatuses"><div class="empty">Loading…</div></div></div></section>
+<section class="panel" style="margin-top:14px"><h2>QA → Client Approval → Delivery → Revenue</h2><div class="lifecycle"><div class="lifecycle-card"><h3>QA</h3><div class="lifecycle-status accent" id="qaStatus">—</div><div class="lifecycle-detail" id="qaHealth">Loading…</div></div><div class="lifecycle-card"><h3>Client Approval</h3><div class="lifecycle-status accent" id="approvalStatus">—</div><div class="lifecycle-detail" id="approvalHealth">Loading…</div></div><div class="lifecycle-card"><h3>Delivery</h3><div class="lifecycle-status accent" id="deliveryStatus">—</div><div class="lifecycle-detail" id="deliveryHealth">Loading…</div></div><div class="lifecycle-card"><h3>Revenue</h3><div class="lifecycle-status accent" id="revenueStatus">—</div><div class="lifecycle-detail" id="revenueHealth">Loading…</div></div></div></section>
 <div class="footer" id="updated">Waiting for core state…</div>
 </div>
-
 <script>
-function esc(value) {
-  return String(value ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));
-}
-function statusClass(status) {
-  const s = String(status || "").toUpperCase();
-  if (["ONLINE","READY","COMPLETED","COMPLETE","PASSED","DELIVERED","PAID"].includes(s)) return "good";
-  if (["WAITING","WAITING_FOR_APPROVAL","PENDING","DRAFT","RUNNING"].includes(s)) return "warn";
-  if (["FAILED","BLOCKED","CANCELLED","DENIED"].includes(s)) return "bad";
-  return "accent";
-}
-function renderCounts(target, counts) {
-  const entries = Object.entries(counts || {});
-  if (!entries.length) { target.innerHTML = '<div class="empty">No records.</div>'; return; }
-  target.innerHTML = entries.map(([status,count]) => `
-    <div class="row"><span>${esc(status)}</span><span class="badge ${statusClass(status)}">${esc(count)}</span></div>
-  `).join("");
-}
-async function loadDashboard() {
-  try {
-    const [statusResponse, servicesResponse] = await Promise.all([
-      fetch('/api/dashboard/status'),
-      fetch('/api/dashboard/services')
-    ]);
-    const status = await statusResponse.json();
-    const services = await servicesResponse.json();
-    if (!status.success || !services.success) throw new Error('Dashboard API returned an invalid response');
-
-    document.getElementById('systemState').textContent = '● ONLINE';
-    document.getElementById('systemState').className = 'online';
-    document.getElementById('systemStatus').textContent = 'ONLINE';
-    document.getElementById('systemBrain').textContent = 'READ-ONLY CONTROL SURFACE';
-    document.getElementById('serviceTotal').textContent = status.services.total;
-    document.getElementById('taskTotal').textContent = status.tasks.total;
-    document.getElementById('blockerTotal').textContent = status.blockers.length;
-
-    renderCounts(document.getElementById('tasks'), status.tasks.by_status);
-    renderCounts(document.getElementById('serviceStatuses'), services.by_status);
-
-    const serviceItems = services.items || [];
-    document.getElementById('services').innerHTML = serviceItems.length
-      ? serviceItems.map(service => `
-          <div class="service">
-            <div class="service-title">${esc(service.name || service.service_id || 'Unnamed Service')}</div>
-            <div class="service-meta">ID: ${esc(service.service_id)} · <span class="${statusClass(service.status)}">${esc(service.status)}</span></div>
-          </div>
-        `).join('')
-      : '<div class="empty">No services created yet.</div>';
-
-    const blockers = status.blockers || [];
-    document.getElementById('blockers').innerHTML = blockers.length
-      ? blockers.map(item => `
-          <div class="row">
-            <span>${esc(item.task_id)}</span>
-            <span class="badge ${statusClass(item.status)}">${esc(item.status)}${item.reason ? ' · ' + esc(item.reason) : ''}</span>
-          </div>
-        `).join('')
-      : '<div class="empty good">No active blockers.</div>';
-
-    document.getElementById('updated').textContent = 'Live core state · refreshed ' + new Date().toLocaleTimeString();
-  } catch (error) {
-    document.getElementById('systemState').textContent = '● OFFLINE';
-    document.getElementById('systemState').style.color = 'var(--bad)';
-    document.getElementById('systemStatus').textContent = 'OFFLINE';
-    document.getElementById('systemBrain').textContent = error.message;
-    document.getElementById('updated').textContent = 'Dashboard connection failed · ' + new Date().toLocaleTimeString();
-  }
-}
-loadDashboard();
-setInterval(loadDashboard, 5000);
+function esc(value) { return String(value ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c])); }
+function statusClass(status) { const s=String(status||"").toUpperCase(); if(["ONLINE","READY","COMPLETED","COMPLETE","PASSED","DELIVERED","PAID","AVAILABLE","HEALTHY"].includes(s))return"good"; if(["WAITING","WAITING_FOR_APPROVAL","PENDING","DRAFT","RUNNING"].includes(s))return"warn"; if(["FAILED","BLOCKED","CANCELLED","DENIED","UNHEALTHY"].includes(s))return"bad"; return"accent"; }
+function renderCounts(target,counts){const entries=Object.entries(counts||{});if(!entries.length){target.innerHTML='<div class="empty">No records.</div>';return;}target.innerHTML=entries.map(([status,count])=>`<div class="row"><span>${esc(status)}</span><span class="badge ${statusClass(status)}">${esc(count)}</span></div>`).join("");}
+function renderComponent(id,detailId,data){const component=data.component||{};const health=data.health||{};const status=component.status||health.status||health.state||"UNKNOWN";document.getElementById(id).textContent=esc(status);document.getElementById(id).className=`lifecycle-status ${statusClass(status)}`;document.getElementById(detailId).textContent=health.healthy===true?"Healthy core component":(health.message||health.status||"Core state available");}
+async function loadDashboard(){try{const responses=await Promise.all([fetch('/api/dashboard/status'),fetch('/api/dashboard/services'),fetch('/api/dashboard/qa'),fetch('/api/dashboard/client-approval'),fetch('/api/dashboard/delivery'),fetch('/api/dashboard/revenue')]);const [statusResponse,servicesResponse,qaResponse,approvalResponse,deliveryResponse,revenueResponse]=responses;const status=await statusResponse.json(),services=await servicesResponse.json(),qa=await qaResponse.json(),approval=await approvalResponse.json(),delivery=await deliveryResponse.json(),revenue=await revenueResponse.json();if(!status.success||!services.success||!qa.success||!approval.success||!delivery.success||!revenue.success)throw new Error('Dashboard API returned an invalid response');
+document.getElementById('systemState').textContent='● ONLINE';document.getElementById('systemStatus').textContent='ONLINE';document.getElementById('systemBrain').textContent='READ-ONLY CONTROL SURFACE';document.getElementById('serviceTotal').textContent=status.services.total;document.getElementById('taskTotal').textContent=status.tasks.total;document.getElementById('blockerTotal').textContent=status.blockers.length;renderCounts(document.getElementById('tasks'),status.tasks.by_status);renderCounts(document.getElementById('serviceStatuses'),services.by_status);
+const serviceItems=services.items||[];document.getElementById('services').innerHTML=serviceItems.length?serviceItems.map(service=>`<div class="service"><div class="service-title">${esc(service.name||service.service_id||'Unnamed Service')}</div><div class="service-meta">ID: ${esc(service.service_id)} · <span class="${statusClass(service.status)}">${esc(service.status)}</span></div></div>`).join(''):'<div class="empty">No services created yet.</div>';
+const blockers=status.blockers||[];document.getElementById('blockers').innerHTML=blockers.length?blockers.map(item=>`<div class="row"><span>${esc(item.task_id)}</span><span class="badge ${statusClass(item.status)}">${esc(item.status)}${item.reason?' · '+esc(item.reason):''}</span></div>`).join(''):'<div class="empty good">No active blockers.</div>';
+renderComponent('qaStatus','qaHealth',qa);renderComponent('approvalStatus','approvalHealth',approval);renderComponent('deliveryStatus','deliveryHealth',delivery);renderComponent('revenueStatus','revenueHealth',revenue);document.getElementById('updated').textContent='Live core state · refreshed '+new Date().toLocaleTimeString();}catch(error){document.getElementById('systemState').textContent='● OFFLINE';document.getElementById('systemState').style.color='var(--bad)';document.getElementById('systemStatus').textContent='OFFLINE';document.getElementById('systemBrain').textContent=error.message;document.getElementById('updated').textContent='Dashboard connection failed · '+new Date().toLocaleTimeString();}}
+loadDashboard();setInterval(loadDashboard,5000);
 </script>
 </body>
 </html>
