@@ -107,7 +107,7 @@ async function asyncTest(name, fn) {
 
     await asyncTest("Orchestrator rejects reuse of request_id for a different task", async () => {
         await assert.rejects(
-            orchestrator.execute({ service_id: plan.service_id, task_id: plan.task_ids[1], action: "AI_QUALIFICATION", request_id: "req-001" }),
+            orchestrator.execute({ service_id: plan.service_id, task_id: plan.task_ids[1], action: "LEAD_QUALIFICATION", request_id: "req-001" }),
             /request_id already bound/
         );
     });
