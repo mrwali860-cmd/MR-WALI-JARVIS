@@ -8,6 +8,7 @@ const ServiceManager = require("./src/business/service-manager");
 const TaskManager = require("./src/business/task-manager");
 const QualityAssurance = require("./src/business/qa");
 const ClientApproval = require("./src/business/client-approval");
+const Delivery = require("./src/business/delivery");
 const DashboardReadModel = require("./src/business/dashboard-read-model");
 
 const app = express();
@@ -16,7 +17,7 @@ const STATE_FILE = path.join(__dirname, "jarvis_state.json");
 app.use(cors()); app.use(express.json()); app.use(express.static(__dirname));
 let dashboardReadModel = null;
 function getDashboardReadModel() {
-  if (!dashboardReadModel) dashboardReadModel = new DashboardReadModel({ serviceManager: new ServiceManager(), taskManager: new TaskManager(), qa: new QualityAssurance(), clientApproval: new ClientApproval() });
+  if (!dashboardReadModel) dashboardReadModel = new DashboardReadModel({ serviceManager: new ServiceManager(), taskManager: new TaskManager(), qa: new QualityAssurance(), clientApproval: new ClientApproval(), delivery: new Delivery() });
   return dashboardReadModel;
 }
 function readJSON(file, fallback) { try { if (!fs.existsSync(file)) { fs.writeFileSync(file, JSON.stringify(fallback, null, 2)); return fallback; } return JSON.parse(fs.readFileSync(file, "utf8")); } catch (error) { console.error("READ ERROR:", error.message); return fallback; } }
@@ -38,6 +39,7 @@ app.get("/api/dashboard/tasks", (req, res) => { try { res.json(getDashboardReadM
 app.get("/api/dashboard/activity", (req, res) => { try { res.json(getDashboardReadModel().getActivity()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
 app.get("/api/dashboard/qa", (req, res) => { try { res.json(getDashboardReadModel().getQA()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
 app.get("/api/dashboard/client-approval", (req, res) => { try { res.json(getDashboardReadModel().getClientApproval()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
+app.get("/api/dashboard/delivery", (req, res) => { try { res.json(getDashboardReadModel().getDelivery()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
 app.get("/api/status", (req, res) => { const memory = loadMemory(); const state = loadState(); res.json({ name: "MR WALI JARVIS", status: "ONLINE", version: "2.0.0", brain: "LOCAL EXECUTION ENGINE", smartMemory: "ACTIVE", rememberedMemories: memory.memories.length, activeMission: state.activeMission }); });
 app.get("/api/memory", (req, res) => res.json(loadMemory())); app.get("/api/mission", (req, res) => res.json(loadState()));
 app.post("/ask", async (req, res) => { try { const { message } = req.body; if (!message) return res.status(400).json({ success: false, error: "Message is required" }); const result = analyzeCommand(message); const classification = classifyMemory(message); const saved = remember(message, classification); const actionResult = await executeAction(result, message); res.json({ success: true, jarvis: actionResult.message, commandType: result.type, action: result.action, actionExecuted: actionResult.executed, actionStatus: actionResult.status, memoryCategory: classification.category, memorySaved: saved }); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
