@@ -19,6 +19,22 @@ class DashboardReadModel {
         };
     }
 
+    getTasks() {
+        const tasks = this.taskManager.listTasks();
+        const byStatus = {};
+        for (const task of tasks) {
+            byStatus[task.status] = (byStatus[task.status] || 0) + 1;
+        }
+        return {
+            success: true,
+            control_surface: "READ_ONLY",
+            actions_mutable: false,
+            total: tasks.length,
+            by_status: byStatus,
+            items: tasks
+        };
+    }
+
     getStatus() {
         const services = this.serviceManager.listServices();
         const tasks = this.taskManager.listTasks();
