@@ -139,6 +139,15 @@ app.get("/api/dashboard/services", (req, res) => {
   }
 });
 
+app.get("/api/dashboard/tasks", (req, res) => {
+  try {
+    res.json(getDashboardReadModel().getTasks());
+  } catch (error) {
+    console.error("DASHBOARD TASKS ERROR:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.get("/api/status", (req, res) => {
   const memory = loadMemory();
   const state = loadState();
