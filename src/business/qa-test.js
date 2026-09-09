@@ -2,8 +2,10 @@
 
 const assert = require("assert");
 const QualityAssurance = require("./qa");
+const ClientApproval = require("./client-approval");
 
 const qa = new QualityAssurance();
+const clientApproval = new ClientApproval();
 const base = {
     service_id: "SERVICE-1",
     task_id: "TASK-1",
@@ -83,5 +85,56 @@ assert.strictEqual(result.decision, "FAIL");
 assert.strictEqual(result.retry_count, 2);
 assert.strictEqual(result.max_retries, 3);
 assert.strictEqual(result.rework_required, true);
+
+// Integration boundary: completed execution is evaluated by QA before approval.
+const passedQa = qa.evaluate(base);
+assert.strictEqual(passedQa.decision, "PASS");
+const pendingApproval = clientApproval.decide({
+    service_id: passedQa.service_id,
+    request_id: passedQa.request_id,
+    qa_decision: passedQa.decision,
+    approval_context: {}
+});
+assert.strictEqual(pendingApproval.decision, "PENDING");
+assert.match(pendingApproval.reason, /Awaiting explicit client approval/);
+
+// QA FAIL blocks progression to client approval.
+const failedQa = qa.evaluate({ ...base, acceptance_criteria: [{ name: "required_fields", passed: false }] });
+const blockedAfterFail = clientApproval.decide({
+    service_id: failedQa.service_id,
+    request_id: failedQa.request_id,
+    qa_decision: failedQa.decision,
+    approval_context: { approved: true }
+});
+assert.strictEqual(failedQa.decision, "FAIL");
+assert.strictEqual(blockedAfterFail.decision, "PENDING");
+assert.match(blockedAfterFail.reason, /QA is PASS/);
+
+// QA REVIEW blocks automatic progression even when an approval signal is present.
+const reviewQa = qa.evaluate({ ...base, acceptance_criteria: "ambiguous" });
+const blockedAfterReview = clientApproval.decide({
+    service_id: reviewQa.service_id,
+    request_id: reviewQa.request_id,
+    qa_decision: reviewQa.decision,
+    approval_context: { approved: true }
+});
+assert.strictEqual(reviewQa.decision, "REVIEW");
+assert.strictEqual(blockedAfterReview.decision, "PENDING");
+
+// QA PASS makes the next stage eligible, but QA itself never grants approval.
+const approved = clientApproval.decide({
+    service_id: passedQa.service_id,
+    request_id: passedQa.request_id,
+    qa_decision: passedQa.decision,
+    approval_context: { approved: true }
+});
+assert.strictEqual(approved.decision, "APPROVED");
+assert.notStrictEqual(passedQa.decision, "APPROVED");
+assert.notStrictEqual(typeof qa.approve, "function");
+
+// Boundary ownership: QA evaluates; Client Approval decides explicit consent.
+assert.strictEqual(typeof qa.evaluate, "function");
+assert.strictEqual(typeof clientApproval.decide, "function");
+assert.notStrictEqual(typeof qa.decide, "function");
 
 console.log("QA V1 TESTS: PASS");
