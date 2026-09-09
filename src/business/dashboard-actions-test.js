@@ -116,6 +116,52 @@ test("Valid action request is normalized without owning persistence", () => {
     assert.strictEqual(executorCalls[0].action, "LEAD_INTAKE");
     assert.strictEqual(executorCalls[0].request_id, requestId);
 
+    const blockedRequestId = `dashboard-blocked-${Date.now()}`;
+    const blockedResult = await realBoundary.execute({
+        action: "EXECUTE_TASK",
+        target: { service_id: plan.service_id, task_id: plan.task_ids[2] },
+        request_id: blockedRequestId
+    });
+    assert.strictEqual(blockedResult.success, false);
+    assert.strictEqual(blockedResult.status, "BLOCKED");
+    assert.strictEqual(blockedResult.request_id, blockedRequestId);
+    assert.strictEqual(blockedResult.result.trace.request_id, blockedRequestId);
+    assert.strictEqual(blockedResult.result.trace.service_id, plan.service_id);
+    assert.strictEqual(blockedResult.result.trace.task_id, plan.task_ids[2]);
+    assert.deepStrictEqual(blockedResult.result.trace.events.map(event => event.status), ["STARTED", "BLOCKED"]);
+    assert.strictEqual(integration.taskManager.getTask(plan.task_ids[2]).status, "BLOCKED");
+
+    // Approval gate is also traceable through the Dashboard boundary.
+    const approvalIntegration = new ServiceManagerIntegration();
+    const approvalPlan = approvalIntegration.createServicePlan({ service_id: `DASH_APPROVAL_${Date.now()}`, client: "Dashboard Approval", requirement: "Booking approval trace" });
+    for (const taskId of [approvalPlan.task_ids[1], approvalPlan.task_ids[2], approvalPlan.task_ids[3]]) {
+        approvalIntegration.taskManager.markReady(taskId);
+        approvalIntegration.taskManager.updateTaskStatus(taskId, "RUNNING");
+        approvalIntegration.taskManager.completeTask(taskId, { simulated: true });
+    }
+    approvalIntegration.taskManager.markReady(approvalPlan.task_ids[4]);
+    const approvalOrchestrator = new Orchestrator({
+        serviceManager: approvalIntegration.serviceManager,
+        taskManager: approvalIntegration.taskManager,
+        riskPolicy: new RiskApprovalPolicy(),
+        executor: async payload => ({ executed_action: payload.action })
+    });
+    const approvalBoundary = new DashboardActionBoundary({ orchestrator: approvalOrchestrator });
+    const approvalRequestId = `dashboard-approval-${Date.now()}`;
+    const approvalResult = await approvalBoundary.execute({
+        action: "EXECUTE_TASK",
+        target: { service_id: approvalPlan.service_id, task_id: approvalPlan.task_ids[4] },
+        request_id: approvalRequestId
+    });
+    assert.strictEqual(approvalResult.success, false);
+    assert.strictEqual(approvalResult.status, "WAITING_FOR_APPROVAL");
+    assert.strictEqual(approvalResult.request_id, approvalRequestId);
+    assert.strictEqual(approvalResult.result.trace.request_id, approvalRequestId);
+    assert.strictEqual(approvalResult.result.trace.service_id, approvalPlan.service_id);
+    assert.strictEqual(approvalResult.result.trace.task_id, approvalPlan.task_ids[4]);
+    assert.deepStrictEqual(approvalResult.result.trace.events.map(event => event.status), ["STARTED", "WAITING_FOR_APPROVAL"]);
+    assert.strictEqual(approvalIntegration.taskManager.getTask(approvalPlan.task_ids[4]).status, "WAITING_FOR_APPROVAL");
+
     // Dashboard cannot override the canonical action because it sends only EXECUTE_TASK.
     const directMismatch = await orchestrator.execute({
         service_id: plan.service_id,
