@@ -11,15 +11,25 @@ const ClientApproval = require("./src/business/client-approval");
 const Delivery = require("./src/business/delivery");
 const Revenue = require("./src/business/revenue");
 const DashboardReadModel = require("./src/business/dashboard-read-model");
+const Orchestrator = require("./src/business/orchestrator");
+const DashboardActionBoundary = require("./src/business/dashboard-actions");
 
 const app = express();
 const MEMORY_FILE = path.join(__dirname, "memory.json");
 const STATE_FILE = path.join(__dirname, "jarvis_state.json");
 app.use(cors()); app.use(express.json()); app.use(express.static(__dirname));
 let dashboardReadModel = null;
+let dashboardActionBoundary = null;
 function getDashboardReadModel() {
   if (!dashboardReadModel) dashboardReadModel = new DashboardReadModel({ serviceManager: new ServiceManager(), taskManager: new TaskManager(), qa: new QualityAssurance(), clientApproval: new ClientApproval(), delivery: new Delivery(), revenue: new Revenue() });
   return dashboardReadModel;
+}
+function getDashboardActionBoundary() {
+  if (!dashboardActionBoundary) {
+    const dashboard = getDashboardReadModel();
+    dashboardActionBoundary = new DashboardActionBoundary({ orchestrator: new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager }) });
+  }
+  return dashboardActionBoundary;
 }
 function readJSON(file, fallback) { try { if (!fs.existsSync(file)) { fs.writeFileSync(file, JSON.stringify(fallback, null, 2)); return fallback; } return JSON.parse(fs.readFileSync(file, "utf8")); } catch (error) { console.error("READ ERROR:", error.message); return fallback; } }
 function writeJSON(file, data) { fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
@@ -42,8 +52,10 @@ app.get("/api/dashboard/qa", (req, res) => { try { res.json(getDashboardReadMode
 app.get("/api/dashboard/client-approval", (req, res) => { try { res.json(getDashboardReadModel().getClientApproval()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
 app.get("/api/dashboard/delivery", (req, res) => { try { res.json(getDashboardReadModel().getDelivery()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
 app.get("/api/dashboard/revenue", (req, res) => { try { res.json(getDashboardReadModel().getRevenue()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
+app.post("/api/dashboard/actions", async (req, res) => { try { const result = await getDashboardActionBoundary().execute(req.body || {}); res.status(result.success ? 200 : 422).json(result); } catch (error) { res.status(400).json({ success: false, error: error.message, request_id: req.body && req.body.request_id ? req.body.request_id : null }); } });
 app.get("/api/status", (req, res) => { const memory = loadMemory(); const state = loadState(); res.json({ name: "MR WALI JARVIS", status: "ONLINE", version: "2.0.0", brain: "LOCAL EXECUTION ENGINE", smartMemory: "ACTIVE", rememberedMemories: memory.memories.length, activeMission: state.activeMission }); });
 app.get("/api/memory", (req, res) => res.json(loadMemory())); app.get("/api/mission", (req, res) => res.json(loadState()));
 app.post("/ask", async (req, res) => { try { const { message } = req.body; if (!message) return res.status(400).json({ success: false, error: "Message is required" }); const result = analyzeCommand(message); const classification = classifyMemory(message); const saved = remember(message, classification); const actionResult = await executeAction(result, message); res.json({ success: true, jarvis: actionResult.message, commandType: result.type, action: result.action, actionExecuted: actionResult.executed, actionStatus: actionResult.status, memoryCategory: classification.category, memorySaved: saved }); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
-const PORT = 3000; app.listen(PORT, () => { console.log(`MR WALI JARVIS ONLINE: http://localhost:${PORT}`); console.log("SMART MEMORY SYSTEM: ACTIVE"); console.log("MISSION & ACTION ENGINE: ACTIVE"); });
+const PORT = 3000; const server = app.listen(PORT, () => { console.log(`MR WALI JARVIS ONLINE: http://localhost:${PORT}`); console.log("SMART MEMORY SYSTEM: ACTIVE"); console.log("MISSION & ACTION ENGINE: ACTIVE"); });
+module.exports = { app, server, port: PORT, close: () => server.close() };
 async function discoverProspects() { return { executed: true, status: "COMPLETE", prospects: [{ name: "Dubai Real Estate Prospect 1", address: "Dubai, UAE", phone: "", website: "", rating: null, source: "Manual Discovery Queue" }, { name: "Dubai Real Estate Prospect 2", address: "Dubai, UAE", phone: "", website: "", rating: null, source: "Manual Discovery Queue" }, { name: "Dubai Real Estate Prospect 3", address: "Dubai, UAE", phone: "", website: "", rating: null, source: "Manual Discovery Queue" }] }; }
