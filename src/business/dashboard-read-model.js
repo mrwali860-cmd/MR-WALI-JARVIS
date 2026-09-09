@@ -35,6 +35,30 @@ class DashboardReadModel {
         };
     }
 
+    getActivity() {
+        const items = [];
+        for (const task of this.taskManager.listTasks()) {
+            for (const entry of Array.isArray(task.audit) ? task.audit : []) {
+                items.push({
+                    task_id: task.task_id,
+                    from: entry.from ?? null,
+                    to: entry.to,
+                    timestamp: entry.timestamp,
+                    reason: entry.reason ?? null,
+                    ...(entry.request_id ? { request_id: entry.request_id } : {})
+                });
+            }
+        }
+        items.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+        return {
+            success: true,
+            control_surface: "READ_ONLY",
+            actions_mutable: false,
+            total: items.length,
+            items
+        };
+    }
+
     getStatus() {
         const services = this.serviceManager.listServices();
         const tasks = this.taskManager.listTasks();
