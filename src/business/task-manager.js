@@ -73,7 +73,13 @@ class TaskManager extends ComponentContract {
         Object.assign(task, metadata);
         task.updated_at = now;
         if (!Array.isArray(task.audit)) task.audit = [];
-        if (previousStatus !== status) task.audit.push({ from: previousStatus, to: status, timestamp: now, reason: metadata.reason || metadata.request_id || null });
+        if (previousStatus !== status) task.audit.push({
+            from: previousStatus,
+            to: status,
+            timestamp: now,
+            reason: metadata.reason || metadata.request_id || null,
+            ...(metadata.request_id ? { request_id: metadata.request_id } : {})
+        });
         this.saveTasks();
         return task;
     }
