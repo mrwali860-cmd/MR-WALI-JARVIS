@@ -29,10 +29,6 @@ function getDashboardReadModel() {
   return dashboardReadModel;
 }
 
-/* =========================
-   FILE HELPERS
-========================= */
-
 function readJSON(file, fallback) {
   try {
     if (!fs.existsSync(file)) {
@@ -45,9 +41,7 @@ function readJSON(file, fallback) {
     return fallback;
   }
 }
-
 function writeJSON(file, data) { fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
-
 function loadMemory() {
   const memory = readJSON(MEMORY_FILE, { memories: [] });
   if (memory.commands && !memory.memories) { memory.memories = memory.commands; delete memory.commands; writeJSON(MEMORY_FILE, memory); }
@@ -74,7 +68,6 @@ function getMemorySummary() {
   if (!memory.memories.length) return "I do not have any saved memories yet.";
   return memory.memories.slice(-10).map((item, index) => `${index + 1}. [${item.category}] ${item.message}`).join("\n");
 }
-
 function loadState() { return readJSON(STATE_FILE, { activeMission: null, tasks: [], updatedAt: null }); }
 function saveState(state) { state.updatedAt = new Date().toISOString(); writeJSON(STATE_FILE, state); }
 function startFirstClientMission() {
@@ -128,14 +121,20 @@ async function executeAction(result, message) {
   return { executed: false, status: "ANALYZED", message: `Command analyzed: "${message}"` };
 }
 
-/* =========================
-   DASHBOARD V1 READ API
-========================= */
 app.get("/api/dashboard/status", (req, res) => {
   try {
     res.json(getDashboardReadModel().getStatus());
   } catch (error) {
     console.error("DASHBOARD STATUS ERROR:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get("/api/dashboard/services", (req, res) => {
+  try {
+    res.json(getDashboardReadModel().getServices());
+  } catch (error) {
+    console.error("DASHBOARD SERVICES ERROR:", error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 });
