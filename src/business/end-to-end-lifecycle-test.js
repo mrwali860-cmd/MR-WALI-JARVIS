@@ -136,12 +136,18 @@ const Revenue = require("./revenue");
     serviceManager.recordRevenue(serviceId, revenueResult.amount, revenueResult.currency);
     assert.strictEqual(serviceManager.getService(serviceId).revenue.status, "RECORDED");
 
-    // Complete the remaining lifecycle tasks after their dedicated gates pass.
-    taskManager.completeTask(tasks[5].task_id, { crm_recorded: true });
-    taskManager.completeTask(tasks[6].task_id, qaResult);
-    taskManager.completeTask(tasks[7].task_id, approval);
-    taskManager.completeTask(tasks[8].task_id, deliveryResult);
-    taskManager.completeTask(tasks[9].task_id, revenueResult);
+    // Complete the remaining lifecycle tasks through the canonical state machine.
+    for (let i = 5; i < tasks.length; i += 1) {
+        taskManager.markReady(tasks[i].task_id);
+        taskManager.updateTaskStatus(tasks[i].task_id, "RUNNING");
+        taskManager.completeTask(tasks[i].task_id, {
+            lifecycle_stage: tasks[i].action,
+            ...(i === 6 ? qaResult : {}),
+            ...(i === 7 ? approval : {}),
+            ...(i === 8 ? deliveryResult : {}),
+            ...(i === 9 ? revenueResult : {})
+        });
+    }
     assert.strictEqual(taskManager.getSummary().by_status.COMPLETED, 10);
 
     // Revenue must never be inferred from delivery alone.
@@ -153,9 +159,10 @@ const Revenue = require("./revenue");
         payment_status: "PENDING",
         amount: 5000,
         currency: "USD",
-        transaction_reference: `${serviceId}_UNPAID_TXN`
+        transaction_reference: `${serviceId}_PENDING_TXN`
     });
     assert.strictEqual(unpaid.revenue_status, "PENDING");
+    assert.strictEqual(unpaid.decision, "WAITING_FOR_PAYMENT");
 
     console.log("End-to-end lifecycle tests: PASS");
 })();
