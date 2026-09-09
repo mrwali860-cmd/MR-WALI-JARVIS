@@ -58,9 +58,12 @@ async function asyncTest(name, fn) {
         });
         assert.strictEqual(result.success, true);
         assert.strictEqual(result.status, "COMPLETED");
+        assert.strictEqual(result.trace.request_id, "req-001");
+        assert.deepStrictEqual(result.trace.events.map(event => event.status), ["STARTED", "RUNNING", "COMPLETED"]);
+        assert.ok(result.trace.ended_at);
     });
 
-    await asyncTest("Dependency gate blocks task whose prerequisite is incomplete", async () => {
+    await asyncTest("Dependency gate blocks task and records trace", async () => {
         const taskId = plan.task_ids[2];
         const result = await orchestrator.execute({
             service_id: plan.service_id,
@@ -70,9 +73,11 @@ async function asyncTest(name, fn) {
         });
         assert.strictEqual(result.success, false);
         assert.strictEqual(result.status, "BLOCKED");
+        assert.deepStrictEqual(result.trace.events.map(event => event.status), ["STARTED", "BLOCKED"]);
+        assert.strictEqual(result.trace.events[1].reason, "DEPENDENCIES_NOT_COMPLETE");
     });
 
-    await asyncTest("Approval gate blocks booking without approval", async () => {
+    await asyncTest("Approval gate records WAITING_FOR_APPROVAL trace", async () => {
         const approvalTask = plan.task_ids[3];
         const bookingTask = plan.task_ids[4];
 
@@ -97,9 +102,11 @@ async function asyncTest(name, fn) {
         });
         assert.strictEqual(result.success, false);
         assert.strictEqual(result.status, "WAITING_FOR_APPROVAL");
+        assert.deepStrictEqual(result.trace.events.map(event => event.status), ["STARTED", "WAITING_FOR_APPROVAL"]);
+        assert.strictEqual(result.trace.ended_at, null);
     });
 
-    await asyncTest("Approved booking executes", async () => {
+    await asyncTest("Approved booking executes with complete trace", async () => {
         const taskId = plan.task_ids[4];
         const result = await orchestrator.execute({
             service_id: plan.service_id,
@@ -110,9 +117,10 @@ async function asyncTest(name, fn) {
         });
         assert.strictEqual(result.success, true);
         assert.strictEqual(result.status, "COMPLETED");
+        assert.deepStrictEqual(result.trace.events.map(event => event.status), ["STARTED", "RUNNING", "COMPLETED"]);
     });
 
-    await asyncTest("Executor failure marks task FAILED", async () => {
+    await asyncTest("Executor failure records FAILED trace", async () => {
         const failingIntegration = new ServiceManagerIntegration();
         const failingPlan = failingIntegration.createServicePlan({
             service_id: `ORCH_FAIL_${Date.now()}`,
@@ -135,6 +143,17 @@ async function asyncTest(name, fn) {
         assert.strictEqual(result.success, false);
         assert.strictEqual(result.status, "FAILED");
         assert.strictEqual(result.task.status, "FAILED");
+        assert.deepStrictEqual(result.trace.events.map(event => event.status), ["STARTED", "RUNNING", "FAILED"]);
+        assert.ok(result.trace.ended_at);
+    });
+
+    test("Orchestrator rejects reuse of request_id for a different task", () => {
+        assert.throws(() => orchestrator.execute({
+            service_id: plan.service_id,
+            task_id: plan.task_ids[0],
+            action: "LEAD_INTAKE",
+            request_id: "req-001"
+        }), /request_id already bound/);
     });
 
     if (process.exitCode) process.exit(1);
