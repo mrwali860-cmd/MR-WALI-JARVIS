@@ -58,19 +58,23 @@ class Orchestrator extends ComponentContract {
         if (!service.tasks.includes(taskId)) {
             throw new Error(`Task does not belong to service: ${taskId}`);
         }
-        if (task.action !== action) {
+
+        // Dashboard Action Boundary uses EXECUTE_TASK as a command envelope.
+        // The Orchestrator remains authoritative for the actual task action.
+        const executionAction = action === "EXECUTE_TASK" ? task.action : action;
+        if (executionAction !== task.action) {
             throw new Error(`Action mismatch for task ${taskId}: expected ${task.action}`);
         }
 
-        return { service, task };
+        return { service, task, executionAction };
     }
 
-    createTrace(input) {
+    createTrace(input, executionAction = input.action) {
         const trace = new ExecutionTrace({
             request_id: input.request_id,
             service_id: input.service_id,
             task_id: input.task_id,
-            action: input.action,
+            action: executionAction,
             registry: new Map(this.executionTraces)
         });
         this.executionTraces.set(input.request_id, trace);
@@ -78,8 +82,8 @@ class Orchestrator extends ComponentContract {
     }
 
     async executeTask(input = {}) {
-        const { service, task } = this.validateRequest(input);
-        const trace = this.createTrace(input);
+        const { service, task, executionAction } = this.validateRequest(input);
+        const trace = this.createTrace(input, executionAction);
         const approvalContext = input.approval_context || {};
 
         if (!this.taskManager.areDependenciesComplete(task.task_id)) {
@@ -98,7 +102,7 @@ class Orchestrator extends ComponentContract {
         }
 
         const policyDecision = this.riskPolicy.evaluate({
-            action: task.action,
+            action: executionAction,
             approval_context: approvalContext
         });
 
@@ -150,7 +154,7 @@ class Orchestrator extends ComponentContract {
             const result = await this.executor({
                 service,
                 task,
-                action: input.action,
+                action: executionAction,
                 request_id: input.request_id,
                 approval_context: approvalContext,
                 input: input.input || null
