@@ -134,7 +134,8 @@ test("Valid action request is normalized without owning persistence", () => {
     // Approval gate is also traceable through the Dashboard boundary.
     const approvalIntegration = new ServiceManagerIntegration();
     const approvalPlan = approvalIntegration.createServicePlan({ service_id: `DASH_APPROVAL_${Date.now()}`, client: "Dashboard Approval", requirement: "Booking approval trace" });
-    for (const taskId of [approvalPlan.task_ids[1], approvalPlan.task_ids[2], approvalPlan.task_ids[3]]) {
+    // Complete prerequisite tasks in dependency order; task 4 is the approval-gated booking task.
+    for (const taskId of approvalPlan.task_ids.slice(0, 4)) {
         approvalIntegration.taskManager.markReady(taskId);
         approvalIntegration.taskManager.updateTaskStatus(taskId, "RUNNING");
         approvalIntegration.taskManager.completeTask(taskId, { simulated: true });
