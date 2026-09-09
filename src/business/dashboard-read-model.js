@@ -1,12 +1,13 @@
 "use strict";
 
 class DashboardReadModel {
-    constructor({ serviceManager, taskManager, qa } = {}) {
+    constructor({ serviceManager, taskManager, qa, clientApproval } = {}) {
         if (!serviceManager) throw new Error("serviceManager is required");
         if (!taskManager) throw new Error("taskManager is required");
         this.serviceManager = serviceManager;
         this.taskManager = taskManager;
         this.qa = qa || null;
+        this.clientApproval = clientApproval || null;
     }
 
     getServices() {
@@ -28,6 +29,10 @@ class DashboardReadModel {
     getQA() {
         if (!this.qa) throw new Error("qa is required");
         return { success: true, control_surface: "READ_ONLY", actions_mutable: false, component: this.qa.getInfo(), health: this.qa.healthCheck() };
+    }
+    getClientApproval() {
+        if (!this.clientApproval) throw new Error("clientApproval is required");
+        return { success: true, control_surface: "READ_ONLY", actions_mutable: false, component: this.clientApproval.getInfo(), health: this.clientApproval.healthCheck() };
     }
     getStatus() {
         const services = this.serviceManager.listServices();
