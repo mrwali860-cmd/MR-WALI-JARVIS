@@ -4,32 +4,16 @@ const ComponentContract = require("../../contracts/component-contract");
 const RiskApprovalPolicy = require("./risk-approval-policy");
 const ExecutionTrace = require("./execution-trace");
 
-/**
- * JARVIS Orchestrator Execution Contract V1
- *
- * Coordinates task execution without owning service data or bypassing
- * the central risk/approval policy. External providers are injected.
- */
+/** JARVIS Orchestrator Execution Contract V1. */
 class Orchestrator extends ComponentContract {
     constructor({ serviceManager, taskManager, executor, riskPolicy } = {}) {
-        super({
-            id: "ORCHESTRATOR",
-            name: "JARVIS Orchestrator",
-            version: "1.0.0",
-            status: "AVAILABLE"
-        });
-
+        super({ id: "ORCHESTRATOR", name: "JARVIS Orchestrator", version: "1.0.0", status: "AVAILABLE" });
         if (!serviceManager) throw new Error("serviceManager is required");
         if (!taskManager) throw new Error("taskManager is required");
-
         this.serviceManager = serviceManager;
         this.taskManager = taskManager;
         this.riskPolicy = riskPolicy || new RiskApprovalPolicy();
-        this.executor = executor || (async ({ action, task_id }) => ({
-            simulated: true,
-            action,
-            task_id
-        }));
+        this.executor = executor || (async ({ action, task_id }) => ({ simulated: true, action, task_id }));
         this.executionTraces = new Map();
     }
 
@@ -50,33 +34,17 @@ class Orchestrator extends ComponentContract {
         if (!taskId) throw new Error("task_id is required");
         if (!action) throw new Error("action is required");
         if (!requestId) throw new Error("request_id is required");
-
         const service = this.serviceManager.getService(serviceId);
         if (!service) throw new Error(`Unknown service: ${serviceId}`);
-
         const task = this.getTaskOrThrow(taskId);
-        if (!service.tasks.includes(taskId)) {
-            throw new Error(`Task does not belong to service: ${taskId}`);
-        }
-
-        // Dashboard Action Boundary uses EXECUTE_TASK as a command envelope.
-        // The Orchestrator remains authoritative for the actual task action.
+        if (!service.tasks.includes(taskId)) throw new Error(`Task does not belong to service: ${taskId}`);
         const executionAction = action === "EXECUTE_TASK" ? task.action : action;
-        if (executionAction !== task.action) {
-            throw new Error(`Action mismatch for task ${taskId}: expected ${task.action}`);
-        }
-
+        if (executionAction !== task.action) throw new Error(`Action mismatch for task ${taskId}: expected ${task.action}`);
         return { service, task, executionAction };
     }
 
     createTrace(input, executionAction = input.action) {
-        const trace = new ExecutionTrace({
-            request_id: input.request_id,
-            service_id: input.service_id,
-            task_id: input.task_id,
-            action: executionAction,
-            registry: new Map(this.executionTraces)
-        });
+        const trace = new ExecutionTrace({ request_id: input.request_id, service_id: input.service_id, task_id: input.task_id, action: executionAction, registry: new Map(this.executionTraces) });
         this.executionTraces.set(input.request_id, trace);
         return trace;
     }
@@ -87,107 +55,39 @@ class Orchestrator extends ComponentContract {
         const approvalContext = input.approval_context || {};
 
         if (!this.taskManager.areDependenciesComplete(task.task_id)) {
-            this.taskManager.updateTaskStatus(task.task_id, "BLOCKED", {
-                blocked_reason: "DEPENDENCIES_NOT_COMPLETE",
-                request_id: input.request_id
-            });
+            this.taskManager.updateTaskStatus(task.task_id, "BLOCKED", { blocked_reason: "DEPENDENCIES_NOT_COMPLETE", request_id: input.request_id });
             trace.record("BLOCKED", { reason: "DEPENDENCIES_NOT_COMPLETE" });
-            return {
-                success: false,
-                status: "BLOCKED",
-                reason: "DEPENDENCIES_NOT_COMPLETE",
-                task_id: task.task_id,
-                trace: trace.toJSON()
-            };
+            return { success: false, status: "BLOCKED", reason: "DEPENDENCIES_NOT_COMPLETE", task_id: task.task_id, trace: trace.toJSON() };
         }
 
-        const policyDecision = this.riskPolicy.evaluate({
-            action: executionAction,
-            approval_context: approvalContext
-        });
-
+        const policyDecision = this.riskPolicy.evaluate({ action: executionAction, approval_context: approvalContext });
         if (policyDecision.decision === "WAIT") {
-            this.taskManager.updateTaskStatus(task.task_id, "WAITING_FOR_APPROVAL", {
-                approval_reason: policyDecision.reason,
-                request_id: input.request_id
-            });
-            trace.record("WAITING_FOR_APPROVAL", {
-                reason: policyDecision.reason,
-                policy_decision: policyDecision
-            });
-            return {
-                success: false,
-                status: "WAITING_FOR_APPROVAL",
-                reason: policyDecision.reason,
-                task_id: task.task_id,
-                policy: policyDecision,
-                trace: trace.toJSON()
-            };
+            this.taskManager.updateTaskStatus(task.task_id, "WAITING_FOR_APPROVAL", { approval_reason: policyDecision.reason, request_id: input.request_id });
+            trace.record("WAITING_FOR_APPROVAL", { reason: policyDecision.reason, policy_decision: policyDecision });
+            return { success: false, status: "WAITING_FOR_APPROVAL", reason: policyDecision.reason, task_id: task.task_id, policy: policyDecision, trace: trace.toJSON() };
         }
-
         if (policyDecision.decision === "DENY") {
-            this.taskManager.updateTaskStatus(task.task_id, "FAILED", {
-                blocked_reason: policyDecision.reason,
-                request_id: input.request_id
-            });
-            trace.record("FAILED", {
-                reason: policyDecision.reason,
-                policy_decision: policyDecision
-            });
-            return {
-                success: false,
-                status: "FAILED",
-                reason: policyDecision.reason,
-                task_id: task.task_id,
-                policy: policyDecision,
-                trace: trace.toJSON()
-            };
+            this.taskManager.updateTaskStatus(task.task_id, "FAILED", { blocked_reason: policyDecision.reason, request_id: input.request_id });
+            trace.record("FAILED", { reason: policyDecision.reason, policy_decision: policyDecision });
+            return { success: false, status: "FAILED", reason: policyDecision.reason, task_id: task.task_id, policy: policyDecision, trace: trace.toJSON() };
         }
 
-        this.taskManager.updateTaskStatus(task.task_id, "RUNNING", {
-            request_id: input.request_id,
-            started_at: new Date().toISOString()
-        });
+        this.taskManager.updateTaskStatus(task.task_id, "RUNNING", { request_id: input.request_id, started_at: new Date().toISOString() });
         trace.record("RUNNING");
-
         try {
-            const result = await this.executor({
-                service,
-                task,
-                action: executionAction,
-                request_id: input.request_id,
-                approval_context: approvalContext,
-                input: input.input || null
-            });
-
+            const result = await this.executor({ service, task, action: executionAction, request_id: input.request_id, approval_context: approvalContext, input: input.input || null });
             this.taskManager.completeTask(task.task_id, result);
             const completedTask = this.taskManager.getTask(task.task_id);
             trace.record("COMPLETED", { result });
-
-            return {
-                success: true,
-                status: "COMPLETED",
-                task: completedTask,
-                result,
-                policy: policyDecision,
-                trace: trace.toJSON()
-            };
+            return { success: true, status: "COMPLETED", task: completedTask, result, policy: policyDecision, trace: trace.toJSON() };
         } catch (error) {
             this.taskManager.failTask(task.task_id, error.message || error);
             trace.record("FAILED", { error: error.message || String(error) });
-            return {
-                success: false,
-                status: "FAILED",
-                task: this.taskManager.getTask(task.task_id),
-                error: error.message || String(error),
-                trace: trace.toJSON()
-            };
+            return { success: false, status: "FAILED", task: this.taskManager.getTask(task.task_id), error: error.message || String(error), trace: trace.toJSON() };
         }
     }
 
-    async execute(input = {}) {
-        return this.executeTask(input);
-    }
+    async execute(input = {}) { return this.executeTask(input); }
 }
 
 module.exports = Orchestrator;
