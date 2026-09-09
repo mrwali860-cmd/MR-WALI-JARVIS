@@ -8,6 +8,17 @@ class DashboardReadModel {
         this.taskManager = taskManager;
     }
 
+    getServices() {
+        const services = this.serviceManager.listServices();
+        return {
+            success: true,
+            control_surface: "READ_ONLY",
+            total: services.length,
+            by_status: this.serviceManager.getSummary().by_status,
+            items: services
+        };
+    }
+
     getStatus() {
         const services = this.serviceManager.listServices();
         const tasks = this.taskManager.listTasks();
