@@ -21,8 +21,9 @@ test("Dashboard UI reads QA, approval, delivery and revenue state", () => {
 });
 
 test("Dashboard UI exposes the QA to Revenue lifecycle", () => {
+    assert.ok(html.includes("QA → Client Approval → Delivery → Revenue"));
     for (const section of ["QA", "Client Approval", "Delivery", "Revenue"]) {
-        assert.ok(html.includes(`<h2>${section}</h2>`), `Missing lifecycle section: ${section}`);
+        assert.ok(html.includes(`<h3>${section}</h3>`), `Missing lifecycle state: ${section}`);
     }
 });
 
@@ -35,10 +36,10 @@ test("Lifecycle UI remains read-only", () => {
 
 test("Lifecycle UI escapes core values", () => {
     assert.ok(html.includes("function esc(value)"));
-    assert.ok(html.includes("esc(qa.component.status)"));
-    assert.ok(html.includes("esc(approval.component.status)"));
-    assert.ok(html.includes("esc(delivery.component.status)"));
-    assert.ok(html.includes("esc(revenue.component.status)"));
+    assert.ok(html.includes("const component=data.component||{}"));
+    assert.ok(html.includes("document.getElementById(id).textContent=esc(status)"));
+    assert.ok(html.includes("esc(service.service_id)"));
+    assert.ok(html.includes("esc(item.task_id)"));
 });
 
 console.log("Dashboard lifecycle UI contract: " + (process.exitCode ? "FAILED" : "PASS"));
