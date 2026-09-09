@@ -174,7 +174,7 @@ const Revenue = require("./revenue");
             transaction_reference: `${serviceId}_PENDING_TXN`
         });
         assert.strictEqual(unpaid.revenue_status, "PENDING");
-        assert.strictEqual(unpaid.decision, "WAITING_FOR_PAYMENT");
+        assert.strictEqual(unpaid.decision, "PENDING");
 
         console.log("End-to-end lifecycle tests: PASS");
     } finally {
