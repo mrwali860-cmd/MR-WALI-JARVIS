@@ -76,9 +76,16 @@ async function asyncTest(name, fn) {
         const approvalTask = plan.task_ids[3];
         const bookingTask = plan.task_ids[4];
 
+        integration.taskManager.markReady(plan.task_ids[1]);
+        integration.taskManager.updateTaskStatus(plan.task_ids[1], "RUNNING");
         integration.taskManager.completeTask(plan.task_ids[1], { simulated: true });
+
+        integration.taskManager.markReady(plan.task_ids[2]);
+        integration.taskManager.updateTaskStatus(plan.task_ids[2], "RUNNING");
         integration.taskManager.completeTask(plan.task_ids[2], { simulated: true });
+
         integration.taskManager.markReady(approvalTask);
+        integration.taskManager.updateTaskStatus(approvalTask, "RUNNING");
         integration.taskManager.completeTask(approvalTask, { approved: false });
         integration.taskManager.markReady(bookingTask);
 
