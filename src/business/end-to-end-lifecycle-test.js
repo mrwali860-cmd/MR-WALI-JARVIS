@@ -80,7 +80,7 @@ const Revenue = require("./revenue");
                 service_id: serviceId,
                 task_id: task.task_id,
                 action: task.action,
-                request_id: requestId,
+                request_id: `${requestId}_${task.task_id}`,
                 approval_context: task.action === "BOOKING_EXECUTION"
                     ? { status: "APPROVED", source: "E2E_TEST" }
                     : {}
