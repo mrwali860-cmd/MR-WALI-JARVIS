@@ -54,8 +54,16 @@ class RevenueEngineV1Integration {
     }
     decideClientApproval(input = {}) {
         const result = this.clientApproval.decide(input);
-        if (result.decision === "APPROVED") this.serviceManager.approveService(input.service_id, input.approval_context);
-        return result;
+        if (result.decision !== "APPROVED") return result;
+
+        const stateTransition = this.serviceManager.approveService(input.service_id, input.approval_context);
+        if (!stateTransition.success) {
+            throw new Error(`REVENUE_ENGINE_INTEGRATION: client approval state transition failed: ${stateTransition.reason}`);
+        }
+        if (stateTransition.service.delivery.status !== "READY") {
+            throw new Error("REVENUE_ENGINE_INTEGRATION: approved service must have delivery status READY");
+        }
+        return { ...result, service_state: stateTransition.service };
     }
     deliver(input = {}) {
         const result = this.delivery.deliver(input);
