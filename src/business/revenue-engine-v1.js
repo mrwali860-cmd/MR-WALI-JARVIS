@@ -3,18 +3,8 @@
 const ComponentContract = require("../../contracts/component-contract");
 
 const STAGES = Object.freeze([
-    "PROSPECT",
-    "QUALIFIED",
-    "CONTACTED",
-    "REPLIED",
-    "CALL_REQUESTED",
-    "OFFER_SENT",
-    "APPROVED",
-    "PAYMENT_PENDING",
-    "PAID",
-    "DELIVERING",
-    "DELIVERED",
-    "LOST"
+    "PROSPECT", "QUALIFIED", "CONTACTED", "REPLIED", "CALL_REQUESTED",
+    "OFFER_SENT", "APPROVED", "PAYMENT_PENDING", "PAID", "DELIVERING", "DELIVERED", "LOST"
 ]);
 
 const TERMINAL = new Set(["PAID", "DELIVERED", "LOST"]);
@@ -35,22 +25,21 @@ class RevenueEngineV1 extends ComponentContract {
 
     acquire(input = {}) {
         this.validateOpportunity(input);
-        const existing = this.opportunities.get(input.opportunity_id);
+        const id = String(input.opportunity_id).trim();
+        const existing = this.opportunities.get(id);
         if (existing) return { ...existing, duplicate: true };
         const opportunity = {
-            opportunity_id: String(input.opportunity_id).trim(),
+            opportunity_id: id,
             request_id: String(input.request_id).trim(),
             service_id: String(input.service_id).trim(),
             company: String(input.company).trim(),
             contact: String(input.contact).trim(),
             market: String(input.market || "").trim(),
             problem: String(input.problem || "").trim(),
-            score: this.score(input),
-            stage: "PROSPECT",
-            next_action: "QUALIFY",
+            score: this.score(input), stage: "PROSPECT", next_action: "QUALIFY",
             created_at: new Date().toISOString()
         };
-        this.opportunities.set(opportunity.opportunity_id, opportunity);
+        this.opportunities.set(id, opportunity);
         return { ...opportunity };
     }
 
@@ -86,8 +75,7 @@ class RevenueEngineV1 extends ComponentContract {
             outcome: String(input.outcome || "Qualified leads and approved appointment workflow").trim(),
             amount: Number(input.amount),
             currency: String(input.currency || "USD").trim().toUpperCase(),
-            status: "OFFER_SENT",
-            created_at: new Date().toISOString()
+            status: "OFFER_SENT", created_at: new Date().toISOString()
         };
         this.offers.set(offer.offer_id, offer);
         this.advance(opportunity.opportunity_id, "OFFER_SENT", "AWAIT_CLIENT_APPROVAL");
@@ -97,6 +85,7 @@ class RevenueEngineV1 extends ComponentContract {
     approveOffer(offerId) {
         const offer = this.offers.get(offerId);
         if (!offer) throw new Error("REVENUE_ENGINE: offer not found");
+        if (offer.status !== "OFFER_SENT") throw new Error("REVENUE_ENGINE: offer cannot be approved from current status");
         offer.status = "APPROVED";
         this.advance(offer.opportunity_id, "APPROVED", "REQUEST_PAYMENT");
         return { ...offer };
@@ -111,17 +100,14 @@ class RevenueEngineV1 extends ComponentContract {
         if (!reference) throw new Error("REVENUE_ENGINE: transaction_reference is required");
         if (this.payments.has(reference)) return { ...this.payments.get(reference), duplicate: true };
         const payment = {
-            offer_id: offer.offer_id,
-            opportunity_id: offer.opportunity_id,
-            amount: offer.amount,
-            currency: offer.currency,
-            transaction_reference: reference,
-            payment_status: "CONFIRMED",
+            offer_id: offer.offer_id, opportunity_id: offer.opportunity_id,
+            amount: offer.amount, currency: offer.currency,
+            transaction_reference: reference, payment_status: "CONFIRMED",
             confirmed_at: new Date().toISOString()
         };
         this.payments.set(reference, payment);
         offer.status = "PAID";
-        this.advance(offer.opportunity_id, "PAID", "START_DELIVERY");
+        this.advance(opportunity.opportunity_id, "PAID", "START_DELIVERY");
         return { ...payment };
     }
 
