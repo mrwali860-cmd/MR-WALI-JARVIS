@@ -24,6 +24,7 @@ function validInput(overrides = {}) {
     },
     execution_result: {
       success: true,
+      action: 'SEND_MESSAGE',
       message_id: 'msg-001'
     },
     ...overrides
@@ -41,7 +42,7 @@ function run() {
   assert.strictEqual(pass.action, 'SEND_MESSAGE');
   assert.ok(pass.reason_code);
 
-  const fail = verifier.verify(validInput({ execution_result: { success: true } }));
+  const fail = verifier.verify(validInput({ execution_result: { success: true, action: 'SEND_MESSAGE' } }));
   assert.strictEqual(fail.status, 'FAIL');
 
   for (const field of ['request_id', 'service_id', 'task_id', 'action']) {
@@ -76,6 +77,7 @@ function run() {
 
   const secretInput = validInput({ execution_result: {
     success: true,
+    action: 'SEND_MESSAGE',
     message_id: 'msg-001',
     access_token: 'SECRET',
     authorization: 'Bearer SECRET',
