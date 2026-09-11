@@ -1,6 +1,6 @@
 # Verify V1 — Architecture Contract
 
-**Status:** Contract Draft / Implementation Gate
+**Status:** FROZEN
 **Version:** V1
 **Scope:** Verification boundary between execution coordination and Evidence/Audit
 
@@ -121,23 +121,16 @@ Verify V1 does not include:
 
 ## 12. Acceptance Gate
 
-This document defines the contract only. No Verify implementation is considered complete until tests prove the contract invariants.
+This contract was accepted and the implementation was verified by tests and exact main-branch CI evidence.
 
-Required future verification tests MUST cover at minimum:
+Verified evidence:
 
-1. deterministic PASS for valid compliant output;
-2. FAIL for non-compliant output;
-3. FAIL for missing/malformed identity;
-4. FAIL for identity mismatch;
-5. FAIL for missing/malformed contract;
-6. FAIL for missing/malformed execution result;
-7. FAIL for action mismatch;
-8. fail-closed behavior on verifier errors;
-9. no provider/external execution from Verify;
-10. no authorization/approval bypass;
-11. provider-agnostic behavior;
-12. credential/secret sanitization;
-13. evidence promotion only from verified PASS output;
-14. deterministic output and safe serialization.
+- Verify contract commit: `ef7cc367361facb0dbda673235785e412800d738`;
+- Verify implementation hardening commit: `d0011b77dbd3815d88edbf0a32260c66d992f676`;
+- Verify test commit: `f075767bead731967e04d8b8d48a95e14ca658b2`;
+- PR #8 exact head CI: Run #195, ID `34575435887`, SUCCESS;
+- merged main SHA: `53438e4d2a363520c840ba731660e3e7e38b7c2a`;
+- exact main CI: Run #196, ID `34575685861`, SUCCESS;
+- main test job: `103187499854`, SUCCESS.
 
-**Implementation is blocked until the contract is reviewed and accepted.**
+**FREEZE:** Verify V1 is frozen. Changes require a proven defect or a new architecture requirement.
