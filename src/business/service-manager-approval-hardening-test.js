@@ -30,16 +30,20 @@ try {
         source: "client"
     });
     assert.strictEqual(blocked.success, false);
+    assert.strictEqual(blocked.reason, "QA_NOT_PASSED");
     service = manager.getService(serviceId);
     assert.notStrictEqual(service.approval.status, "APPROVED");
+    assert.notStrictEqual(service.delivery.status, "READY");
     assert.notStrictEqual(service.status, "DELIVERED");
 
     // QA PASS alone must not approve.
     manager.completeQA(serviceId, true, { decision: "PASS" });
     blocked = manager.approveService(serviceId, {});
     assert.strictEqual(blocked.success, false);
+    assert.strictEqual(blocked.reason, "CLIENT_APPROVAL_NOT_APPROVED");
     service = manager.getService(serviceId);
     assert.strictEqual(service.approval.status, "PENDING");
+    assert.notStrictEqual(service.delivery.status, "READY");
     assert.notStrictEqual(service.status, "DELIVERED");
 
     // Explicit rejection must remain blocked.
@@ -48,11 +52,13 @@ try {
         source: "client"
     });
     assert.strictEqual(blocked.success, false);
+    assert.strictEqual(blocked.reason, "CLIENT_APPROVAL_REJECTED");
     service = manager.getService(serviceId);
     assert.strictEqual(service.approval.status, "PENDING");
+    assert.notStrictEqual(service.delivery.status, "READY");
     assert.notStrictEqual(service.status, "DELIVERED");
 
-    // Explicit approval with QA PASS is the only successful path.
+    // Explicit approval with QA PASS makes the service delivery-eligible, but does not deliver it.
     const approved = manager.approveService(serviceId, {
         status: "APPROVED",
         source: "client",
@@ -60,7 +66,8 @@ try {
     });
     assert.strictEqual(approved.success, true);
     assert.strictEqual(approved.service.approval.status, "APPROVED");
-    assert.strictEqual(approved.service.status, "DELIVERED");
+    assert.strictEqual(approved.service.status, "WAITING_FOR_APPROVAL");
+    assert.strictEqual(approved.service.delivery.status, "READY");
     assert.ok(approved.service.approval.context);
     assert.strictEqual(approved.service.approval.context.source, "client");
 
@@ -76,6 +83,8 @@ try {
         service_id: secondId
     });
     assert.strictEqual(executeBlocked.success, false);
+    assert.strictEqual(executeBlocked.reason, "QA_NOT_PASSED");
+    assert.notStrictEqual(manager.getService(secondId).delivery.status, "READY");
     assert.notStrictEqual(manager.getService(secondId).status, "DELIVERED");
 
     console.log("Service Manager approval hardening tests: PASS");
