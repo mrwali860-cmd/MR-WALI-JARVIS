@@ -49,7 +49,7 @@ class Verify {
     if (execution_result.task_id !== undefined && execution_result.task_id !== task_id) {
       return fail(input, 'IDENTITY_MISMATCH');
     }
-    if (execution_result.action !== undefined && execution_result.action !== action) {
+    if (execution_result.action === undefined || execution_result.action !== action) {
       return fail(input, 'ACTION_MISMATCH');
     }
 
