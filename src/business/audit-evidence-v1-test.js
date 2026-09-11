@@ -29,6 +29,7 @@ function run() {
 
     assert.throws(() => audit.record({ ...base, outcome: "FAILED" }), /identity|audit/i, "same identity with different outcome must be rejected");
     assert.throws(() => audit.record({ ...base, service_id: "SERVICE-AUDIT-OTHER" }), /identity|audit/i, "request identity collision must be rejected");
+    assert.throws(() => audit.record({ ...base, metadata: { changed: true } }), /mutation|audit/i, "same identity with changed metadata must be rejected");
 
     const unsafe = audit.record({
         ...base,
