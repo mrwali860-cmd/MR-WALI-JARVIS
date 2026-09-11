@@ -10,13 +10,6 @@ const QualityAssurance = require("./qa");
 const ClientApproval = require("./client-approval");
 const Delivery = require("./delivery");
 
-/**
- * Commercial lifecycle adapter V1.
- *
- * RevenueEngineV1 owns prospect/offer/payment state. Existing lifecycle
- * components remain authoritative for service execution, QA, client approval,
- * delivery and final accounting. This adapter connects those boundaries only.
- */
 class RevenueEngineV1Integration {
     constructor({ revenueEngine, serviceManager, taskManager, serviceIntegration, orchestrator, qa, clientApproval, delivery, revenue } = {}) {
         this.revenueEngine = revenueEngine || new RevenueEngineV1();
@@ -30,7 +23,6 @@ class RevenueEngineV1Integration {
         this.revenue = revenue || new Revenue();
         this.servicesByOpportunity = new Map();
     }
-
     acquire(input = {}) { return this.revenueEngine.acquire(input); }
     qualify(opportunityId, nextAction = "CONTACT") { return this.revenueEngine.advance(opportunityId, "QUALIFIED", nextAction); }
     contact(opportunityId, nextAction = "WAIT_FOR_REPLY") { return this.revenueEngine.advance(opportunityId, "CONTACTED", nextAction); }
@@ -38,52 +30,44 @@ class RevenueEngineV1Integration {
     requestCall(opportunityId, nextAction = "CREATE_OFFER") { return this.revenueEngine.advance(opportunityId, "CALL_REQUESTED", nextAction); }
     createOffer(input = {}) { return this.revenueEngine.createOffer(input); }
     approveOffer(offerId) { return this.revenueEngine.approveOffer(offerId); }
-
     confirmPayment(input = {}) {
         const payment = this.revenueEngine.confirmPayment(input);
         if (payment.duplicate) return payment;
         const serviceId = input.service_id || `SERVICE_${input.offer_id}`;
-        const plan = this.serviceIntegration.createServicePlan({
-            service_id: serviceId,
-            client: input.client || payment.opportunity_id,
-            requirement: input.requirement
-        });
+        const plan = this.serviceIntegration.createServicePlan({ service_id: serviceId, client: input.client || payment.opportunity_id, requirement: input.requirement });
         this.servicesByOpportunity.set(payment.opportunity_id, serviceId);
         return { ...payment, service_plan: plan };
     }
-
     async executeTask({ service_id, task_id, action, request_id, approval_context, input } = {}) {
         return this.orchestrator.execute({ service_id, task_id, action, request_id, approval_context, input });
     }
-
     evaluateQA(input = {}) {
         const result = this.qa.evaluate(input);
-        if (result.decision === "PASS") this.serviceManager.startQA(input.service_id);
+        if (result.decision === "PASS") {
+            this.serviceManager.startQA(input.service_id);
+            this.serviceManager.completeQA(input.service_id, true, result);
+        } else if (result.decision === "FAIL") {
+            this.serviceManager.startQA(input.service_id);
+            this.serviceManager.completeQA(input.service_id, false, result);
+        }
         return result;
     }
-
     decideClientApproval(input = {}) {
         const result = this.clientApproval.decide(input);
         if (result.decision === "APPROVED") this.serviceManager.approveService(input.service_id, input.approval_context);
         return result;
     }
-
     deliver(input = {}) {
         const result = this.delivery.deliver(input);
         if (result.delivery_status === "DELIVERED") this.serviceManager.completeDelivery(input.service_id);
         return result;
     }
-
     recordRevenue(input = {}) {
         const result = this.revenue.record(input);
         if (result.revenue_status === "PAID") this.serviceManager.recordRevenue(input.service_id, input.amount, input.currency);
         return result;
     }
-
-    intelligence() {
-        return { ...this.revenueEngine.intelligence(), service_links: this.servicesByOpportunity.size, services: this.servicesByOpportunity.size };
-    }
-
+    intelligence() { return { ...this.revenueEngine.intelligence(), service_links: this.servicesByOpportunity.size, services: this.servicesByOpportunity.size }; }
     execute(input = {}) {
         const action = String(input.action || "").trim().toUpperCase();
         switch (action) {
@@ -105,5 +89,4 @@ class RevenueEngineV1Integration {
         }
     }
 }
-
 module.exports = RevenueEngineV1Integration;
