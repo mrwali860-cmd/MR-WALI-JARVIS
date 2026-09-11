@@ -57,7 +57,11 @@ function run() {
 
   assert.strictEqual(verifier.verify(validInput({ contract: null })).status, 'FAIL');
   assert.strictEqual(verifier.verify(validInput({ execution_result: null })).status, 'FAIL');
-  assert.strictEqual(verifier.verify(validInput({ action: 'DELETE_ALL' })).status, 'FAIL');
+  assert.strictEqual(
+    verifier.verify(validInput({ execution_result: { ...validInput().execution_result, action: 'DELETE_ALL' } })).status,
+    'FAIL',
+    'execution result action mismatch must fail closed'
+  );
 
   const verifier2 = makeVerifier();
   const a = verifier.verify(validInput());
