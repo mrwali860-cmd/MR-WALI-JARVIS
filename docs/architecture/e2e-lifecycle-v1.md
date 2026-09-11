@@ -16,7 +16,7 @@ Lock the verified Digital Services lifecycle as the canonical internal business 
 - **Orchestrator**: coordinates task execution in dependency order; it does not bypass policy gates.
 - **Risk / Approval Policy**: fail-closed authorization decision for protected actions.
 - **QA**: validates execution output against acceptance criteria.
-- **Client Approval**: requires QA PASS plus an explicit client approval signal.
+- **Client Approval**: requires QA PASS plus an explicit client approval signal and is the canonical source of client approval decisions.
 - **Delivery**: requires QA PASS and explicit client approval APPROVED.
 - **Revenue**: requires DELIVERED status plus confirmed payment and valid transaction identity.
 
@@ -48,9 +48,11 @@ The integration test verifies:
 - all ten lifecycle tasks reach COMPLETED in the controlled test;
 - unpaid delivery remains Revenue PENDING.
 
-## Known Hardening Item
+## Approval Transition Hardening — CLOSED
 
-`ServiceManager.approveService()` is a legacy lifecycle shortcut that can directly set approval/delivery state without independently proving QA PASS and explicit client approval. This is **not** treated as permission to bypass the Client Approval component. A future hardening change should make the canonical approval transition depend on the explicit Client Approval result rather than silently relying on this legacy shortcut.
+`ServiceManager.approveService()` is a protected lifecycle transition, not a delivery operation. It independently enforces QA PASS and requires an explicit approval context with an APPROVED decision before recording service approval. A successful transition makes the service delivery-eligible (`delivery.status = READY`) but does **not** mark the service DELIVERED or COMPLETED; Delivery owns the actual delivery transition.
+
+The canonical E2E path obtains the approval decision from the Client Approval component and then applies that explicit result to the Service Manager. The Service Manager therefore cannot be used to bypass the Client Approval boundary: missing context, non-approved context, rejection, or missing QA all remain blocked. This hardening is covered by the dedicated Service Manager approval-hardening contract test.
 
 ## Production Boundary
 
@@ -58,4 +60,4 @@ A green E2E test proves the internal business lifecycle contract only. Real mark
 
 ## Gate
 
-**PASS WITH IMPLEMENTATION GATES** — the lifecycle is integration-tested, while real-world external execution remains adapter-specific and approval-controlled.
+**PASS WITH IMPLEMENTATION GATES** — the lifecycle is integration-tested, approval transition hardening is verified, while real-world external execution remains adapter-specific and approval-controlled.
