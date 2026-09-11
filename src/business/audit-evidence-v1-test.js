@@ -28,7 +28,7 @@ function run() {
     assert.strictEqual(audit.list().length, 1, "duplicate must not create a second record");
 
     assert.throws(() => audit.record({ ...base, outcome: "FAILED" }), /identity|audit/i, "same identity with different outcome must be rejected");
-    assert.throws(() => audit.record({ ...base, request_id: "REQ-AUDIT-002" }), /identity|audit/i, "identity mismatch must be rejected");
+    assert.throws(() => audit.record({ ...base, service_id: "SERVICE-AUDIT-OTHER" }), /identity|audit/i, "request identity collision must be rejected");
 
     const unsafe = audit.record({
         ...base,
