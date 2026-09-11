@@ -19,16 +19,13 @@ const RevenueEngineV1Integration = require("./revenue-engine-v1-integration");
     const offer = app.createOffer({ opportunity_id: opportunityId, offer_id: "offer-integration-001", amount: 1500, currency: "USD", problem: "Slow lead response", outcome: "Qualified leads and approved appointment workflow" });
     assert.strictEqual(offer.status, "OFFER_SENT");
     assert.strictEqual(app.approveOffer(offer.offer_id).status, "APPROVED");
-
     assert.throws(() => app.confirmPayment({ offer_id: offer.offer_id, payment_status: "PENDING", transaction_reference: "tx-pending" }), /payment must be CONFIRMED/);
 
     const payment = app.confirmPayment({ offer_id: offer.offer_id, payment_status: "CONFIRMED", transaction_reference: "tx-integration-001", service_id: serviceId, client: "Demo Realty", requirement: "AI appointment booking automation" });
     assert.strictEqual(payment.payment_status, "CONFIRMED");
     assert.strictEqual(payment.service_plan.execution_ready, true);
     assert.strictEqual(payment.service_plan.task_count, 10);
-
-    const duplicate = app.confirmPayment({ offer_id: offer.offer_id, payment_status: "CONFIRMED", transaction_reference: "tx-integration-001" });
-    assert.strictEqual(duplicate.duplicate, true);
+    assert.strictEqual(app.confirmPayment({ offer_id: offer.offer_id, payment_status: "CONFIRMED", transaction_reference: "tx-integration-001" }).duplicate, true);
 
     const plan = app.serviceIntegration.getExecutionPlan(serviceId);
     const firstTask = plan.tasks[0];
@@ -39,18 +36,16 @@ const RevenueEngineV1Integration = require("./revenue-engine-v1-integration");
 
     const qa = app.evaluateQA({ service_id: serviceId, task_id: firstTask.task_id, request_id: requestId, expected_output: { result: "demo" }, actual_output: { result: "demo" }, acceptance_criteria: [{ name: "result", required: true, passed: true }], execution_status: "COMPLETED" });
     assert.strictEqual(qa.decision, "PASS");
-    assert.strictEqual(app.serviceManager.getService(serviceId).qa.status, "IN_PROGRESS");
+    assert.strictEqual(app.serviceManager.getService(serviceId).qa.status, "PASSED");
 
     const approvalPending = app.decideClientApproval({ service_id: serviceId, request_id: requestId, qa_decision: "PASS", approval_context: { status: "PENDING" } });
     assert.strictEqual(approvalPending.decision, "PENDING");
-
     const approval = app.decideClientApproval({ service_id: serviceId, request_id: requestId, qa_decision: "PASS", approval_context: { status: "APPROVED", approved: true, source: "CLIENT" } });
     assert.strictEqual(approval.decision, "APPROVED");
     assert.strictEqual(app.serviceManager.getService(serviceId).delivery.status, "READY");
 
     const blockedDelivery = app.deliver({ service_id: serviceId, request_id: requestId, qa_decision: "FAIL", client_approval_decision: "APPROVED", delivery_payload: { result: "demo" } });
     assert.strictEqual(blockedDelivery.delivery_status, "BLOCKED");
-
     const delivered = app.deliver({ service_id: serviceId, request_id: requestId, qa_decision: "PASS", client_approval_decision: "APPROVED", delivery_payload: { result: "demo" } });
     assert.strictEqual(delivered.delivery_status, "DELIVERED");
     assert.strictEqual(app.serviceManager.getService(serviceId).status, "COMPLETED");
@@ -65,6 +60,5 @@ const RevenueEngineV1Integration = require("./revenue-engine-v1-integration");
     assert.strictEqual(intelligence.deals_won, 1);
     assert.strictEqual(intelligence.cash_collected, 1500);
     assert.strictEqual(intelligence.service_links, 1);
-
     console.log("Revenue Engine V1 Integration Tests: PASS");
 })().catch((error) => { console.error(error); process.exit(1); });
