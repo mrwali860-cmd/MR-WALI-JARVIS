@@ -16,6 +16,12 @@ function sanitize(value) {
     return output;
 }
 
+function canonical(value) {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (!value || typeof value !== "object") return value;
+    return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]));
+}
+
 class AuditEvidenceV1 extends ComponentContract {
     constructor() {
         super({ id: "AUDIT_EVIDENCE", name: "JARVIS Audit Evidence V1", version: "1.0.0", status: "AVAILABLE" });
@@ -41,6 +47,12 @@ class AuditEvidenceV1 extends ComponentContract {
         let hash = 2166136261;
         for (const char of identity) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
         return `AUDIT-${(hash >>> 0).toString(16).padStart(8, "0")}`;
+    }
+
+    _fingerprint(record) {
+        const immutable = { ...record };
+        delete immutable.recorded_at;
+        return JSON.stringify(canonical(immutable));
     }
 
     record(input = {}) {
@@ -69,7 +81,7 @@ class AuditEvidenceV1 extends ComponentContract {
 
         const existing = this.records.get(auditId);
         if (existing) {
-            if (JSON.stringify(existing.evidence) !== JSON.stringify(normalized.evidence) || existing.outcome !== normalized.outcome) {
+            if (this._fingerprint(existing) !== this._fingerprint(normalized)) {
                 throw new Error(`audit record mutation rejected: ${auditId}`);
             }
             return { success: true, duplicate: true, audit_id: auditId, record: existing };
