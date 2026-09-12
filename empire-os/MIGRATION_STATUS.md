@@ -22,19 +22,23 @@ Legacy or structurally inconsistent Empire-OS modules were not blindly migrated.
 
 ## Security
 - No `.env` or secret-bearing file was imported from Empire-OS.
-- The previously tracked repository credential was removed from the migration branch.
+- The previously tracked repository credential was removed.
 - The affected Apify credential was rotated before final merge review.
 - `.env.example` remains placeholder-only.
 
 ## Verification evidence
 - Merge commit: `49f143b20b5e781b8beca2508d9da128e38d4da8`
-- Main CI run: `#242`
-- Exact merge SHA matched the CI run head SHA.
+- Cleanup commit: `d6d838de8cad0ab69964b6578929fb426b470950`
+- Final main SHA: `a42b817f71672dab1423eed0d1d6748272e238a1`
+- Final main CI run: `#244` / `34707716385`
+- Exact final SHA matched the CI run head SHA.
 - CI conclusion: `success`
 - Test job conclusion: `success`
-- Cleanup commit: `d6d838de8cad0ab69964b6578929fb426b470950`
 
-## Freeze policy
-Architecture → Contract → Tests → Implementation → CI → Exact SHA → Evidence → Freeze.
+## Freeze decision
+The migration/cleanup verification gate is **FROZEN** at exact main SHA `a42b817f71672dab1423eed0d1d6748272e238a1`.
 
-The merge itself passed the exact-SHA CI gate. Repository cleanup is recorded separately so the final branch must receive one fresh CI verification before this migration is considered fully frozen.
+Verification chain:
+**Architecture → Contract → Tests → Implementation → CI → Exact SHA → Evidence → FREEZE**
+
+No migration refactor is authorized after this freeze unless a new architecture requirement or verified defect requires it. Future capabilities must use a separate Contract → Test → Implementation → CI → Exact SHA → Evidence → Freeze gate.
