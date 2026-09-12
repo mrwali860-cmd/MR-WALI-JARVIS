@@ -25,7 +25,9 @@ Legacy or structurally inconsistent Empire-OS modules are excluded until their d
 
 ## Security
 - No `.env` or secret-bearing file is imported from Empire-OS.
-- Existing repository credential exposure remains a separate security blocker and must be remediated before final production merge.
+- The previously tracked repository `.env` credential was removed from this migration branch.
+- The affected Apify credential was rotated before final merge review.
+- `.env.example` remains placeholder-only.
 
 ## Verification gate
 Architecture → Contract → Tests → Implementation → CI → Exact SHA → Evidence → Freeze.
