@@ -8,7 +8,7 @@ The agent is a deterministic decision component, not a chatbot and not an unrest
 
 ## Business Loop
 
-`TARGET_MARKET → PROSPECT → QUALIFY → PROBLEM IDENTIFICATION → SERVICE MATCH → OUTREACH → OPPORTUNITY → REVENUE ENGINE`
+`TARGET MARKET → PROSPECT → QUALIFY → PROBLEM IDENTIFICATION → SERVICE MATCH → OUTREACH → OPPORTUNITY → REVENUE ENGINE`
 
 V1 optimizes for a measurable business outcome: a qualified, service-matched opportunity that can proceed through the existing Revenue Engine.
 
@@ -16,9 +16,9 @@ V1 optimizes for a measurable business outcome: a qualified, service-matched opp
 
 1. Accept a canonical prospect/business record.
 2. Validate prospect identity and business context.
-3. Qualify the prospect against the first service's target markets.
+3. Qualify the prospect against the selected first-service contract.
 4. Use supplied problem evidence without inventing facts.
-5. Match only an existing Service Catalog service.
+5. Match only the selected first service in V1.
 6. Produce a deterministic outreach draft and next action.
 7. Return structured evidence for downstream audit.
 8. Prepare output for the existing Revenue Engine boundary without duplicating its lifecycle logic.
@@ -80,19 +80,19 @@ Identical canonical input produces identical output. The deterministic core has 
 
 ## Qualification Rules V1
 
-A prospect is qualified only when required fields are present, the market is one of the first service's target markets, and a non-empty business problem is supplied.
+A prospect is qualified only when required fields are present, the market is one of the selected first service's target markets, and a non-empty business problem is supplied.
 
-The first service currently targets `REAL_ESTATE`, `HIGH_TICKET_BUSINESSES`, and `SERVICE_BUSINESSES`.
+The selected first service currently targets `REAL_ESTATE`, `HIGH_TICKET_BUSINESSES`, and `SERVICE_BUSINESSES`.
 
 Unsupported or incomplete prospects are disqualified and receive no service match.
 
 ## Service Matching
 
-V1 matches the selected first service only when qualification succeeds:
+V1 matches the selected first-service contract only when qualification succeeds:
 
 `AI_APPOINTMENT_BOOKING_AUTOMATION`
 
-No unsupported service may be invented.
+No unsupported service may be invented. The existing service-catalog alignment issue is outside this agent's boundary and is not silently changed here.
 
 ## Outreach Safety
 
