@@ -1,59 +1,49 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+"use strict";
 
-import { BusinessAcquisitionAgentV1 } from './business-acquisition-agent-v1.js';
+const assert = require("assert");
+const { BusinessAcquisitionAgentV1 } = require("./business-acquisition-agent-v1");
 
 const agent = new BusinessAcquisitionAgentV1();
 
 const baseInput = {
-  request_id: 'req-acq-001',
-  prospect: {
-    opportunity_id: 'opp-001',
-    company: 'Demo Realty',
-    contact: 'demo@example.com',
-    market: 'REAL_ESTATE',
-    problem: 'Slow lead response'
-  }
+    request_id: "req-acq-001",
+    prospect: {
+        opportunity_id: "opp-001",
+        company: "Demo Realty",
+        contact: "demo@example.com",
+        market: "REAL_ESTATE",
+        problem: "Slow lead response"
+    }
 };
 
-test('qualifies a target prospect and matches the first sellable service', () => {
-  const result = agent.evaluate(baseInput);
-  assert.equal(result.request_id, 'req-acq-001');
-  assert.equal(result.opportunity_id, 'opp-001');
-  assert.equal(result.qualification, 'QUALIFIED');
-  assert.equal(result.service_id, 'AI_APPOINTMENT_BOOKING_AUTOMATION');
-  assert.equal(result.outreach.status, 'DRAFT');
-  assert.ok(result.outreach.message);
-  assert.ok(result.next_action);
-});
+const qualified = agent.evaluate(baseInput);
+assert.equal(qualified.request_id, "req-acq-001");
+assert.equal(qualified.opportunity_id, "opp-001");
+assert.equal(qualified.qualification, "QUALIFIED");
+assert.equal(qualified.service_id, "AI_APPOINTMENT_BOOKING_AUTOMATION");
+assert.equal(qualified.outreach.status, "DRAFT");
+assert.ok(qualified.outreach.message);
+assert.equal(qualified.next_action, "REQUEST_OUTREACH_APPROVAL");
 
-test('is deterministic for identical input', () => {
-  assert.deepEqual(agent.evaluate(baseInput), agent.evaluate(baseInput));
-});
+assert.deepEqual(agent.evaluate(baseInput), qualified);
 
-test('disqualifies unsupported markets without inventing a match', () => {
-  const result = agent.evaluate({
+const unsupported = agent.evaluate({
     ...baseInput,
-    prospect: { ...baseInput.prospect, market: 'UNSUPPORTED_MARKET' }
-  });
-  assert.equal(result.qualification, 'DISQUALIFIED');
-  assert.equal(result.service_id, null);
-  assert.equal(result.outreach.status, 'NOT_READY');
-  assert.equal(result.outreach.message, null);
+    prospect: { ...baseInput.prospect, market: "UNSUPPORTED_MARKET" }
 });
+assert.equal(unsupported.qualification, "DISQUALIFIED");
+assert.equal(unsupported.service_id, null);
+assert.equal(unsupported.outreach.status, "NOT_READY");
+assert.equal(unsupported.outreach.message, null);
 
-test('fails closed when required prospect context is missing', () => {
-  const result = agent.evaluate({
-    request_id: 'req-acq-002',
-    prospect: { ...baseInput.prospect, problem: '' }
-  });
-  assert.equal(result.qualification, 'DISQUALIFIED');
-  assert.equal(result.service_id, null);
-  assert.equal(result.outreach.status, 'NOT_READY');
+const incomplete = agent.evaluate({
+    request_id: "req-acq-002",
+    prospect: { ...baseInput.prospect, problem: "" }
 });
+assert.equal(incomplete.qualification, "DISQUALIFIED");
+assert.equal(incomplete.service_id, null);
+assert.equal(incomplete.outreach.status, "NOT_READY");
 
-test('does not send external outreach', () => {
-  const result = agent.evaluate(baseInput);
-  assert.equal(result.outreach.status, 'DRAFT');
-  assert.equal(result.evidence.external_execution, false);
-});
+assert.equal(qualified.evidence.external_execution, false);
+
+console.log("Business Acquisition Agent V1: PASS");
