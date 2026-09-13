@@ -21,17 +21,8 @@ const STATE_FILE = path.join(__dirname, "jarvis_state.json");
 app.use(cors()); app.use(express.json()); app.use(express.static(__dirname));
 let dashboardReadModel = null;
 let dashboardActionBoundary = null;
-function getDashboardReadModel() {
-  if (!dashboardReadModel) dashboardReadModel = new DashboardReadModel({ serviceManager: new ServiceManager(), taskManager: new TaskManager(), qa: new QualityAssurance(), clientApproval: new ClientApproval(), delivery: new Delivery(), revenue: new Revenue() });
-  return dashboardReadModel;
-}
-function getDashboardActionBoundary() {
-  if (!dashboardActionBoundary) {
-    const dashboard = getDashboardReadModel();
-    dashboardActionBoundary = new DashboardActionBoundary({ orchestrator: new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager }) });
-  }
-  return dashboardActionBoundary;
-}
+function getDashboardReadModel() { if (!dashboardReadModel) dashboardReadModel = new DashboardReadModel({ serviceManager: new ServiceManager(), taskManager: new TaskManager(), qa: new QualityAssurance(), clientApproval: new ClientApproval(), delivery: new Delivery(), revenue: new Revenue() }); return dashboardReadModel; }
+function getDashboardActionBoundary() { if (!dashboardActionBoundary) { const dashboard = getDashboardReadModel(); dashboardActionBoundary = new DashboardActionBoundary({ orchestrator: new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager }) }); } return dashboardActionBoundary; }
 function readJSON(file, fallback) { try { if (!fs.existsSync(file)) { fs.writeFileSync(file, JSON.stringify(fallback, null, 2)); return fallback; } return JSON.parse(fs.readFileSync(file, "utf8")); } catch (error) { console.error("READ ERROR:", error.message); return fallback; } }
 function writeJSON(file, data) { fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
 function loadMemory() { const memory = readJSON(MEMORY_FILE, { memories: [] }); if (memory.commands && !memory.memories) { memory.memories = memory.commands; delete memory.commands; writeJSON(MEMORY_FILE, memory); } return memory; }
@@ -59,7 +50,4 @@ app.get("/api/memory", (req, res) => res.json(loadMemory())); app.get("/api/miss
 app.post("/ask", async (req, res) => { try { const { message } = req.body; if (!message) return res.status(400).json({ success: false, error: "Message is required" }); const result = analyzeCommand(message); const classification = classifyMemory(message); const saved = remember(message, classification); const actionResult = await executeAction(result, message); res.json({ success: true, jarvis: actionResult.message, commandType: result.type, action: result.action, actionExecuted: actionResult.executed, actionStatus: actionResult.status, memoryCategory: classification.category, memorySaved: saved }); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
 const PORT = 3000; const server = app.listen(PORT, () => { console.log(`MR WALI JARVIS ONLINE: http://localhost:${PORT}`); console.log("SMART MEMORY SYSTEM: ACTIVE"); console.log("MISSION & ACTION ENGINE: ACTIVE"); });
 module.exports = { app, server, port: PORT, close: () => server.close() };
-async function discoverProspects() {
-  const discovery = new ProspectDiscoveryLive({ limit: 20, query: "real estate agency Dubai" });
-  return discovery.discover();
-}
+async function discoverProspects() { const discovery = new ProspectDiscoveryLive({ limit: 20, query: "real estate agency Dubai" }); return discovery.discover(); }
