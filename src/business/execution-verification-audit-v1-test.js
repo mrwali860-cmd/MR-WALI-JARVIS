@@ -5,24 +5,25 @@ const ExternalExecutionBoundary = require("./external-execution-boundary");
 const ProviderAdapter = require("./provider-adapter-v1");
 const { Verify } = require("./verify-v1");
 const AuditEvidenceV1 = require("./audit-evidence-v1");
+const ExecutionVerificationAuditV1 = require("./execution-verification-audit-v1");
 
-function makeIntegration() {
+function makeIntegration(perform = ({ input }) => ({ message_id: `msg-${input.lead_id}` })) {
     const calls = [];
     const adapter = new ProviderAdapter({
         provider: "TEST_PROVIDER",
         action: "SEND_MESSAGE",
         operation: "send_message",
-        perform: ({ request_id, service_id, task_id, action, input }) => {
-            calls.push({ request_id, service_id, task_id, action });
-            return { message_id: `msg-${input.lead_id}` };
+        perform: envelope => {
+            calls.push(envelope);
+            return perform(envelope);
         }
     });
 
     const boundary = new ExternalExecutionBoundary({ adapters: { TEST_PROVIDER: adapter } });
     const verifier = new Verify();
     const audit = new AuditEvidenceV1();
-
-    return { calls, boundary, verifier, audit };
+    const integration = new ExecutionVerificationAuditV1({ executionBoundary: boundary, verifier, audit });
+    return { calls, boundary, verifier, audit, integration };
 }
 
 function base(overrides = {}) {
@@ -40,82 +41,50 @@ function base(overrides = {}) {
 }
 
 function run() {
-    const { calls, boundary, verifier, audit } = makeIntegration();
-
-    const input = base();
-    const execution = boundary.execute(input);
-    assert.strictEqual(execution.success, true);
-    assert.strictEqual(execution.request_id, input.request_id);
-    assert.strictEqual(execution.action, input.action);
-    assert.strictEqual(calls.length, 1);
-
-    const verification = verifier.verify({
-        request_id: input.request_id,
-        service_id: input.service_id,
-        task_id: input.task_id,
-        action: input.action,
-        contract: input.verification_contract,
-        execution_result: { ...execution, ...execution.result }
+    const happy = makeIntegration();
+    const result = happy.integration.execute(base());
+    assert.strictEqual(result.execution.success, true);
+    assert.strictEqual(result.verification.status, "PASS");
+    assert.strictEqual(result.audit.success, true);
+    assert.strictEqual(result.audit.record.outcome, "COMPLETED");
+    assert.strictEqual(happy.calls.length, 1);
+    assert.deepStrictEqual(happy.calls[0], {
+        request_id: "REQ-INTEGRATION-001",
+        service_id: "AI_APPOINTMENT_BOOKING_AUTOMATION",
+        task_id: "LEAD_OUTREACH_001",
+        action: "SEND_MESSAGE",
+        input: { lead_id: "LEAD-001" }
     });
-    assert.strictEqual(verification.status, "PASS");
 
-    const auditResult = audit.record({
-        request_id: input.request_id,
-        service_id: input.service_id,
-        task_id: input.task_id,
-        action: input.action,
-        outcome: "COMPLETED",
-        evidence: [
-            { type: "EXECUTION_RESULT", source: "ExternalExecutionBoundary", reference: input.request_id },
-            { type: "VERIFICATION_RESULT", source: "VerifyV1", reference: "VERIFIED" }
-        ],
-        result: execution.result
-    });
-    assert.strictEqual(auditResult.success, true);
-    assert.strictEqual(auditResult.record.outcome, "COMPLETED");
+    const denied = makeIntegration();
+    assert.throws(() => denied.integration.execute(base({ approval_context: { allowed: false } })), /AUTHORIZATION_REQUIRED/);
+    assert.strictEqual(denied.calls.length, 0, "denied execution must not reach provider");
+    assert.strictEqual(denied.audit.list().length, 0, "denied execution must not create audit");
 
-    const deniedCalls = makeIntegration();
-    assert.throws(() => deniedCalls.boundary.execute(base({ approval_context: { allowed: false } })), /AUTHORIZATION_REQUIRED/);
-    assert.strictEqual(deniedCalls.calls.length, 0, "denied execution must not reach provider");
+    const verifyFail = makeIntegration();
+    const failedVerification = verifyFail.integration.execute(base({
+        verification_contract: { required_fields: ["missing_field"], success_field: "missing_field" }
+    }));
+    assert.strictEqual(failedVerification.execution.success, true);
+    assert.strictEqual(failedVerification.verification.status, "FAIL");
+    assert.strictEqual(failedVerification.audit, null, "verification failure must not create success audit");
+    assert.strictEqual(verifyFail.audit.list().length, 0);
 
-    const failedExecution = makeIntegration().boundary.execute(base({ input: { lead_id: "FAIL" } }));
-    assert.strictEqual(failedExecution.success, true, "test provider succeeds for deterministic happy path");
-    const verificationFailure = verifier.verify({
-        ...base(),
-        contract: { required_fields: ["missing_field"], success_field: "missing_field" },
-        execution_result: failedExecution
-    });
-    assert.strictEqual(verificationFailure.status, "FAIL");
+    const providerFail = makeIntegration(() => { throw new Error("provider failed"); });
+    const failedExecution = providerFail.integration.execute(base());
+    assert.strictEqual(failedExecution.execution.success, false);
+    assert.strictEqual(failedExecution.verification.status, "FAIL");
+    assert.strictEqual(failedExecution.audit, null);
 
-    const auditCountBefore = audit.list().length;
-    assert.strictEqual(auditCountBefore, 1, "verification failure must not create a second success audit");
+    const secret = makeIntegration(() => ({ message_id: "msg-safe", access_token: "SECRET", api_key: "SECRET" }));
+    const secretResult = secret.integration.execute(base());
+    const serialized = JSON.stringify(secretResult);
+    assert.ok(!serialized.includes("SECRET"), "credentials must not cross the verification/audit result boundary");
 
-    const providerFailure = new ExternalExecutionBoundary({
-        adapters: {
-            TEST_PROVIDER: new ProviderAdapter({
-                provider: "TEST_PROVIDER",
-                action: "SEND_MESSAGE",
-                operation: "send_message",
-                perform: () => { throw new Error("provider failed"); }
-            })
-        }
-    }).execute(input);
-    assert.strictEqual(providerFailure.success, false);
-    const providerVerification = verifier.verify({
-        ...base(),
-        execution_result: providerFailure
-    });
-    assert.strictEqual(providerVerification.status, "FAIL");
-
-    const secretExecution = {
-        ...execution,
-        result: { ...execution.result, access_token: "SECRET", api_key: "SECRET" }
-    };
-    const safeVerification = verifier.verify({
-        ...base(),
-        execution_result: secretExecution
-    });
-    assert.ok(!JSON.stringify(safeVerification).includes("SECRET"));
+    const duplicate = happy.integration.execute(base());
+    assert.strictEqual(duplicate.audit.success, true);
+    assert.strictEqual(duplicate.audit.duplicate, true, "same execution identity must remain idempotent");
+    assert.strictEqual(happy.audit.list().length, 1);
 
     console.log("Execution → Verify → Audit Integration V1 Contract Tests: PASS");
 }
