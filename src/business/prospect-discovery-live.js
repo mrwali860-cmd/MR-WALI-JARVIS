@@ -11,18 +11,12 @@ class ProspectDiscoveryLive {
   async apify(pathname, init = {}) {
     const response = await fetch(`https://api.apify.com/v2${pathname}`, {
       ...init,
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        "Content-Type": "application/json",
-        ...(init.headers || {})
-      }
+      headers: { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json", ...(init.headers || {}) }
     });
     const body = await response.text();
     let data;
     try { data = JSON.parse(body); } catch { data = { message: body }; }
-    if (!response.ok) {
-      throw new Error(`APIFY_${response.status}: ${data?.error?.message || data?.message || "request failed"}`);
-    }
+    if (!response.ok) throw new Error(`APIFY_${response.status}: ${data?.error?.message || data?.message || "request failed"}`);
     return data;
   }
 
@@ -46,20 +40,12 @@ class ProspectDiscoveryLive {
     const query = options.query || this.query;
     const limit = options.limit || this.limit;
     if (!this.token) return { executed: false, status: "BLOCKED", message: "APIFY_TOKEN missing in .env", prospects: [] };
-    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
-      return { executed: false, status: "BLOCKED", message: "Prospect limit must be between 1 and 100", prospects: [] };
-    }
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) return { executed: false, status: "BLOCKED", message: "Prospect limit must be between 1 and 100", prospects: [] };
 
     try {
       const response = await this.apify(`/acts/${encodeURIComponent(this.actor)}/runs`, {
         method: "POST",
-        body: JSON.stringify({
-          searchStringsArray: [query],
-          maxCrawledPlacesPerSearch: limit,
-          language: "en",
-          includeWebResults: false,
-          scrapePlaceDetailPage: true
-        })
+        body: JSON.stringify({ searchStringsArray: [query], maxCrawledPlacesPerSearch: limit, language: "en", includeWebResults: false, scrapePlaceDetailPage: true })
       });
       const run = response.data;
       if (!run?.id || !run?.defaultDatasetId) throw new Error("APIFY_INVALID_RUN_RESPONSE");
@@ -76,15 +62,7 @@ class ProspectDiscoveryLive {
       const itemsResponse = await this.apify(`/datasets/${encodeURIComponent(run.defaultDatasetId)}/items?clean=true&format=json`);
       const items = Array.isArray(itemsResponse) ? itemsResponse : [];
       const prospects = items.map((item, index) => this.normalize(item, index));
-      return {
-        executed: true,
-        status: "COMPLETE",
-        mode: "LIVE",
-        query,
-        total_found: prospects.length,
-        prospects,
-        message: `Found ${prospects.length} real prospects from Google Maps.`
-      };
+      return { executed: true, status: "COMPLETE", mode: "LIVE", query, total_found: prospects.length, prospects, message: `Found ${prospects.length} real prospects from Google Maps.` };
     } catch (error) {
       console.error("[ProspectDiscoveryLive] Error:", error.message);
       return { executed: false, status: "FAILED", message: error.message, prospects: [] };
