@@ -13,6 +13,7 @@ const Revenue = require("./src/business/revenue");
 const DashboardReadModel = require("./src/business/dashboard-read-model");
 const Orchestrator = require("./src/business/orchestrator");
 const DashboardActionBoundary = require("./src/business/dashboard-actions");
+const ProspectDiscoveryLive = require("./src/business/prospect-discovery-live");
 
 const app = express();
 const MEMORY_FILE = path.join(__dirname, "memory.json");
@@ -58,4 +59,7 @@ app.get("/api/memory", (req, res) => res.json(loadMemory())); app.get("/api/miss
 app.post("/ask", async (req, res) => { try { const { message } = req.body; if (!message) return res.status(400).json({ success: false, error: "Message is required" }); const result = analyzeCommand(message); const classification = classifyMemory(message); const saved = remember(message, classification); const actionResult = await executeAction(result, message); res.json({ success: true, jarvis: actionResult.message, commandType: result.type, action: result.action, actionExecuted: actionResult.executed, actionStatus: actionResult.status, memoryCategory: classification.category, memorySaved: saved }); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
 const PORT = 3000; const server = app.listen(PORT, () => { console.log(`MR WALI JARVIS ONLINE: http://localhost:${PORT}`); console.log("SMART MEMORY SYSTEM: ACTIVE"); console.log("MISSION & ACTION ENGINE: ACTIVE"); });
 module.exports = { app, server, port: PORT, close: () => server.close() };
-async function discoverProspects() { return { executed: true, status: "COMPLETE", prospects: [{ name: "Dubai Real Estate Prospect 1", address: "Dubai, UAE", phone: "", website: "", rating: null, source: "Manual Discovery Queue" }, { name: "Dubai Real Estate Prospect 2", address: "Dubai, UAE", phone: "", website: "", rating: null, source: "Manual Discovery Queue" }, { name: "Dubai Real Estate Prospect 3", address: "Dubai, UAE", phone: "", website: "", rating: null, source: "Manual Discovery Queue" }] }; }
+async function discoverProspects() {
+  const discovery = new ProspectDiscoveryLive({ limit: 20, query: "real estate agency Dubai" });
+  return discovery.discover();
+}
