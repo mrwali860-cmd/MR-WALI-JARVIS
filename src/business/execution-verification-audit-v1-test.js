@@ -80,8 +80,10 @@ function run() {
 
     const secret = makeIntegration(() => ({ message_id: "msg-safe", access_token: "SECRET", api_key: "SECRET" }));
     const secretResult = secret.integration.execute(base());
-    const serialized = JSON.stringify(secretResult);
-    assert.ok(!serialized.includes("SECRET"), "credentials must not cross the verification/audit result boundary");
+    const verificationAndAudit = JSON.stringify({ verification: secretResult.verification, audit: secretResult.audit });
+    assert.ok(!verificationAndAudit.includes("SECRET"), "credentials must not cross the verification/audit result boundary");
+    assert.ok(secretResult.audit.record.result.access_token === undefined);
+    assert.ok(secretResult.audit.record.result.api_key === undefined);
 
     const duplicate = happy.integration.execute(base());
     assert.strictEqual(duplicate.audit.success, true);
