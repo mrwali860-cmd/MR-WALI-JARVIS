@@ -41,18 +41,28 @@ async function apify(pathname, options = {}) {
 
 function normalizeApifyItem(item, index) {
   const placeId = item.placeId || item.place_id || item.googlePlaceId || item.cid || `result-${index + 1}`;
-  const website = item.website || item.webSite || "";
   return {
     provider: "APIFY_GOOGLE_MAPS",
     provider_record_id: String(placeId),
     company: item.title || item.name || item.businessName || "",
-    website,
+    website: item.website || item.webSite || "",
     phone: item.phone || item.phoneUnformatted || "",
     email: item.email || "",
-    city: item.city || item.addressCity || "Dubai",
-    country: item.country || item.addressCountry || "UAE",
+    city: item.city || item.addressCity || "",
+    country: item.country || item.addressCountry || "",
     category: item.categoryName || item.category || "Real Estate Agency"
   };
+}
+
+function isDubaiProspect(item) {
+  const city = String(item.city || item.addressCity || "").trim().toLowerCase();
+  const country = String(item.country || item.addressCountry || "").trim().toLowerCase();
+  const address = String(item.address || "").trim().toLowerCase();
+  const phone = String(item.phone || item.phoneUnformatted || "").trim();
+  const locationText = `${city} ${country} ${address}`;
+  const dubai = city === "dubai" || /\bdubai\b/.test(address);
+  const uae = country === "uae" || country === "united arab emirates" || /\buae\b/.test(address) || /united arab emirates/.test(address) || /^\+971/.test(phone);
+  return dubai && uae;
 }
 
 async function startActor() {
@@ -100,7 +110,8 @@ async function run() {
   if (completed.status !== "SUCCEEDED") throw new Error(`APIFY_RUN_${completed.status}`);
 
   const rawItems = await fetchDatasetItems(datasetId);
-  const providerResults = rawItems.map(normalizeApifyItem);
+  const targetItems = rawItems.filter(isDubaiProspect);
+  const providerResults = targetItems.map(normalizeApifyItem);
   const requestId = `PROSPECT-DISCOVERY-${Date.now()}`;
   const discovery = new ProspectDiscoveryV1().discover({
     request_id: requestId,
@@ -108,6 +119,8 @@ async function run() {
     search_context: { city: "Dubai", category: "real_estate", query: SEARCH_QUERY },
     provider_results: providerResults
   });
+  discovery.rejected_count += rawItems.length - targetItems.length;
+  discovery.evidence.rejected_count = discovery.rejected_count;
 
   fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true });
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify({
