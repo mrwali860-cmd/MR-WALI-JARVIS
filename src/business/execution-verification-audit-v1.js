@@ -43,7 +43,10 @@ class ExecutionVerificationAuditV1 {
             task_id: taskId,
             action: String(action || "").trim().toUpperCase(),
             contract: verificationContract,
-            execution_result: execution
+            execution_result: {
+                ...execution,
+                ...(execution && execution.result && typeof execution.result === "object" ? execution.result : {})
+            }
         };
 
         let verification;
