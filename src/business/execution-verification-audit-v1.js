@@ -1,7 +1,7 @@
 "use strict";
 
 const ExternalExecutionBoundary = require("./external-execution-boundary");
-const { Verify } = require("./verify-v1");
+const { Verify, sanitize } = require("./verify-v1");
 const AuditEvidenceV1 = require("./audit-evidence-v1");
 
 /**
@@ -43,10 +43,10 @@ class ExecutionVerificationAuditV1 {
             task_id: taskId,
             action: String(action || "").trim().toUpperCase(),
             contract: verificationContract,
-            execution_result: {
+            execution_result: sanitize({
                 ...execution,
                 ...(execution && execution.result && typeof execution.result === "object" ? execution.result : {})
-            }
+            })
         };
 
         let verification;
@@ -77,7 +77,7 @@ class ExecutionVerificationAuditV1 {
                 { type: "EXECUTION_RESULT", source: "ExternalExecutionBoundary", reference: requestId },
                 { type: "VERIFICATION_RESULT", source: "VerifyV1", reference: verification.reason_code }
             ],
-            result: execution.result
+            result: sanitize(execution.result)
         });
 
         return { execution, verification, audit };
