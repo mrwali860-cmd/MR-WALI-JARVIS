@@ -53,7 +53,9 @@ function run() {
         service_id: "AI_APPOINTMENT_BOOKING_AUTOMATION",
         task_id: "LEAD_OUTREACH_001",
         action: "SEND_MESSAGE",
-        input: { lead_id: "LEAD-001" }
+        input: { lead_id: "LEAD-001" },
+        provider: "TEST_PROVIDER",
+        operation: "send_message"
     });
 
     const denied = makeIntegration();
