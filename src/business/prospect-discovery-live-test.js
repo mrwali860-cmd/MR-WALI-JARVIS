@@ -18,7 +18,10 @@ async function run() {
       return new Response(JSON.stringify({ data: { status: "SUCCEEDED" } }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (url.includes("/datasets/")) {
-      return new Response(JSON.stringify([{ title: "Test Dubai Agency", address: "Dubai, UAE", phone: "+971500000000", website: "https://example.com", totalScore: 4.8, reviewsCount: 12, categoryName: "Real Estate Agency", placeId: "place-1" }]), { status: 200, headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify([
+        { title: "Test Dubai Agency", city: "Dubai", country: "UAE", address: "Business Bay, Dubai, UAE", phone: "+971500000000", website: "https://example.com", totalScore: 4.8, reviewsCount: 12, categoryName: "Real Estate Agency", placeId: "place-1" },
+        { title: "Wrong Geography Agency", city: "London", country: "UK", address: "London, UK", phone: "+442000000000", website: "https://wrong.example.com", categoryName: "Real Estate Agency", placeId: "place-2" }
+      ]), { status: 200, headers: { "content-type": "application/json" } });
     }
     throw new Error(`unexpected URL: ${url}`);
   };
@@ -28,7 +31,7 @@ async function run() {
     const blockedResult = await blocked.discover();
     assert.strictEqual(blockedResult.status, "BLOCKED");
 
-    const live = new ProspectDiscoveryLive({ token: "TEST_TOKEN", limit: 1, query: "real estate agency Dubai" });
+    const live = new ProspectDiscoveryLive({ token: "TEST_TOKEN", limit: 2, query: "real estate agency Dubai" });
     const result = await live.discover();
     assert.strictEqual(result.executed, true);
     assert.strictEqual(result.status, "COMPLETE");
