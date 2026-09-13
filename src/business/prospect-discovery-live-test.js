@@ -36,6 +36,7 @@ async function run() {
     assert.strictEqual(result.total_found, 1);
     assert.strictEqual(result.prospects[0].name, "Test Dubai Agency");
     assert.strictEqual(result.prospects[0].place_id, "place-1");
+    assert.strictEqual(calls[0].options.headers.Authorization, "Bearer TEST_TOKEN");
     assert.strictEqual(pollCount, 1);
     assert.strictEqual(calls.length, 3);
 
