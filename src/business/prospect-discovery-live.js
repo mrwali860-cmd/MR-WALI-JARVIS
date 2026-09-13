@@ -36,6 +36,35 @@ class ProspectDiscoveryLive {
     };
   }
 
+  matchesQueryGeography(item, query) {
+    const text = String(query || "").trim().toLowerCase();
+    if (!text) return true;
+
+    // Keep the provider query intact, but do not trust provider results blindly.
+    // Remove the business/category terms and treat the remaining query terms as
+    // geography hints. A result must match at least one hint in its city,
+    // country, or address. If no geography hint remains, accept the provider
+    // result rather than inventing a location constraint.
+    const businessTerms = new Set([
+      "real", "estate", "agency", "agencies", "property", "properties",
+      "company", "companies", "broker", "brokers", "in", "near", "the", "and"
+    ]);
+    const hints = text
+      .split(/[^a-z0-9]+/i)
+      .map(value => value.trim())
+      .filter(Boolean)
+      .filter(value => !businessTerms.has(value));
+
+    if (!hints.length) return true;
+
+    const geography = [item.city, item.country, item.address]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return hints.some(hint => geography.includes(hint));
+  }
+
   async discover(options = {}) {
     const query = options.query || this.query;
     const limit = options.limit || this.limit;
@@ -55,7 +84,8 @@ class ProspectDiscoveryLive {
       if (status !== "SUCCEEDED") throw new Error(`APIFY_RUN_${status}`);
       const itemsResponse = await this.apify(`/datasets/${encodeURIComponent(run.defaultDatasetId)}/items?clean=true&format=json`);
       const items = Array.isArray(itemsResponse) ? itemsResponse : [];
-      const prospects = items.map((item, index) => this.normalize(item, index));
+      const filteredItems = items.filter(item => this.matchesQueryGeography(item, query));
+      const prospects = filteredItems.map((item, index) => this.normalize(item, index));
       return { executed: true, status: "COMPLETE", mode: "LIVE", query, total_found: prospects.length, prospects, message: `Found ${prospects.length} real prospects from Google Maps.` };
     } catch (error) {
       console.error("[ProspectDiscoveryLive] Error:", error.message);
