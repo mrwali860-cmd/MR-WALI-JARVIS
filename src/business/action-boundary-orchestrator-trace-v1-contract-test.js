@@ -121,12 +121,28 @@ async function run() {
     assert.ok(failed.result.trace.ended_at);
 
     // 6. Dashboard cannot override the canonical task action.
-    const mismatch = await boundary.execute({
+    // The boundary deliberately normalizes EXECUTE_TASK and does not accept a
+    // caller-supplied target.action; Orchestrator remains authoritative for the
+    // canonical task action. A direct mismatched execution must still be rejected.
+    const normalizedOverride = boundary.validateRequest({
         action: "EXECUTE_TASK",
         target: { service_id: plan.service_id, task_id: plan.task_ids[1], action: "WRONG_ACTION" },
         request_id: `v5-mismatch-${Date.now()}`
-    }).catch(error => error);
-    assert.match(mismatch.message, /Action mismatch/);
+    });
+    assert.strictEqual(normalizedOverride.action, "EXECUTE_TASK");
+    assert.strictEqual(normalizedOverride.service_id, plan.service_id);
+    assert.strictEqual(normalizedOverride.task_id, plan.task_ids[1]);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(normalizedOverride, "target"), false);
+
+    assert.throws(
+        () => orchestrator.validateRequest({
+            service_id: plan.service_id,
+            task_id: plan.task_ids[1],
+            action: "WRONG_ACTION",
+            request_id: `v5-direct-mismatch-${Date.now()}`
+        }),
+        /Action mismatch/
+    );
 
     // 7. Trace retrieval uses the same request identity.
     const retrieved = orchestrator.getExecutionTrace(requestId);
