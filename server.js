@@ -25,10 +25,12 @@ let dashboardReadModel = null;
 let dashboardActionBoundary = null;
 let jarvisChatV2 = null;
 let operatorConsoleV4TaskCommand = null;
+let orchestrator = null;
 function getDashboardReadModel() { if (!dashboardReadModel) dashboardReadModel = new DashboardReadModel({ serviceManager: new ServiceManager(), taskManager: new TaskManager(), qa: new QualityAssurance(), clientApproval: new ClientApproval(), delivery: new Delivery(), revenue: new Revenue() }); return dashboardReadModel; }
-function getDashboardActionBoundary() { if (!dashboardActionBoundary) { const dashboard = getDashboardReadModel(); dashboardActionBoundary = new DashboardActionBoundary({ orchestrator: new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager }) }); } return dashboardActionBoundary; }
+function getOrchestrator() { if (!orchestrator) { const dashboard = getDashboardReadModel(); orchestrator = new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager }); } return orchestrator; }
+function getDashboardActionBoundary() { if (!dashboardActionBoundary) dashboardActionBoundary = new DashboardActionBoundary({ orchestrator: getOrchestrator() }); return dashboardActionBoundary; }
 function getJarvisChatV2() { if (!jarvisChatV2) jarvisChatV2 = new JarvisChatV2(); return jarvisChatV2; }
-function getOperatorConsoleV4TaskCommand() { if (!operatorConsoleV4TaskCommand) { const dashboard = getDashboardReadModel(); operatorConsoleV4TaskCommand = new OperatorConsoleV4TaskCommand({ orchestrator: new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager }) }); } return operatorConsoleV4TaskCommand; }
+function getOperatorConsoleV4TaskCommand() { if (!operatorConsoleV4TaskCommand) operatorConsoleV4TaskCommand = new OperatorConsoleV4TaskCommand({ orchestrator: getOrchestrator() }); return operatorConsoleV4TaskCommand; }
 function readJSON(file, fallback) { try { if (!fs.existsSync(file)) { fs.writeFileSync(file, JSON.stringify(fallback, null, 2)); return fallback; } return JSON.parse(fs.readFileSync(file, "utf8")); } catch (error) { console.error("READ ERROR:", error.message); return fallback; } }
 function writeJSON(file, data) { fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
 function loadMemory() { const memory = readJSON(MEMORY_FILE, { memories: [] }); if (memory.commands && !memory.memories) { memory.memories = memory.commands; delete memory.commands; writeJSON(MEMORY_FILE, memory); } return memory; }
