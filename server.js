@@ -12,6 +12,7 @@ const Delivery = require("./src/business/delivery");
 const Revenue = require("./src/business/revenue");
 const DashboardReadModel = require("./src/business/dashboard-read-model");
 const Orchestrator = require("./src/business/orchestrator");
+const RealTaskExecutor = require("./src/business/real-task-executor");
 const DashboardActionBoundary = require("./src/business/dashboard-actions");
 const OperatorConsoleV4TaskCommand = require("./src/business/operator-console-v4-real-task-command");
 const ProspectDiscoveryLive = require("./src/business/prospect-discovery-live");
@@ -27,7 +28,7 @@ let jarvisChatV2 = null;
 let operatorConsoleV4TaskCommand = null;
 let orchestrator = null;
 function getDashboardReadModel() { if (!dashboardReadModel) dashboardReadModel = new DashboardReadModel({ serviceManager: new ServiceManager(), taskManager: new TaskManager(), qa: new QualityAssurance(), clientApproval: new ClientApproval(), delivery: new Delivery(), revenue: new Revenue() }); return dashboardReadModel; }
-function getOrchestrator() { if (!orchestrator) { const dashboard = getDashboardReadModel(); orchestrator = new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager }); } return orchestrator; }
+function getOrchestrator() { if (!orchestrator) { const dashboard = getDashboardReadModel(); orchestrator = new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager, executor: new RealTaskExecutor() }); } return orchestrator; }
 function getDashboardActionBoundary() { if (!dashboardActionBoundary) dashboardActionBoundary = new DashboardActionBoundary({ orchestrator: getOrchestrator() }); return dashboardActionBoundary; }
 function getJarvisChatV2() { if (!jarvisChatV2) jarvisChatV2 = new JarvisChatV2(); return jarvisChatV2; }
 function getOperatorConsoleV4TaskCommand() { if (!operatorConsoleV4TaskCommand) operatorConsoleV4TaskCommand = new OperatorConsoleV4TaskCommand({ orchestrator: getOrchestrator() }); return operatorConsoleV4TaskCommand; }
