@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 const fs = require("fs");
 const path = require("path");
@@ -13,7 +13,7 @@ class SERVICE_MANAGER extends ComponentContract {
             status: config.status || "AVAILABLE"
         });
 
-        this.storePath = path.join(process.cwd(), "data", "services.json");
+        this.storePath = config.storePath || path.join(process.cwd(), "data", "services.json");
         this.services = new Map();
         this.allowedStatuses = ["DRAFT", "READY", "IN_PROGRESS", "QA", "WAITING_FOR_APPROVAL", "DELIVERED", "COMPLETED", "CANCELLED", "FAILED"];
         this.loadServices();
