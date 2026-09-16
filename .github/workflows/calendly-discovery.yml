@@ -6,21 +6,48 @@ on:
 jobs:
   discover:
     runs-on: ubuntu-latest
+
     steps:
+      - name: Verify Calendly token
+        env:
+          CALENDAR_TOKEN: ${{ secrets.CALENDAR_TOKEN }}
+        run: |
+          set -e
+          if [ -z "$CALENDAR_TOKEN" ]; then
+            echo "ERROR: CALENDAR_TOKEN GitHub Secret is missing or unavailable."
+            exit 1
+          fi
+          echo "CALENDAR_TOKEN is available."
+
       - name: Discover Calendly Event Types
         env:
           CALENDAR_TOKEN: ${{ secrets.CALENDAR_TOKEN }}
         run: |
           set -e
-          USER=
-          USER_URI=
-          echo "USER_URI="
 
-          curl -sS \
-            -H "Authorization: Bearer " \
+          USER=$(curl -sS \
+            -H "Authorization: Bearer $CALENDAR_TOKEN" \
+            https://api.calendly.com/users/me)
+
+          USER_URI=$(echo "$USER" | jq -r '.resource.uri // empty')
+
+          if [ -z "$USER_URI" ]; then
+            echo "ERROR: Calendly /users/me did not return a user URI."
+            echo "$USER"
+            exit 1
+          fi
+
+          echo "USER_URI=$USER_URI"
+
+          EVENT_TYPES=$(curl -sS \
+            -H "Authorization: Bearer $CALENDAR_TOKEN" \
             --get \
-            --data-urlencode "user=" \
+            --data-urlencode "user=$USER_URI" \
             --data-urlencode "active=true" \
             --data-urlencode "count=100" \
-            https://api.calendly.com/event_types \
-            | jq '.collection[] | {name, uri, scheduling_url}'
+            https://api.calendly.com/event_types)
+
+          echo "$EVENT_TYPES" | jq -e '.collection' > /dev/null
+
+          echo "EVENT TYPES:"
+          echo "$EVENT_TYPES" | jq '.collection[] | {name, uri, scheduling_url}'
