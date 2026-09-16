@@ -1,0 +1,55 @@
+name: Real Calendar Provider Live Gate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-calendar-provider:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify required live-gate configuration
+        env:
+          LIVE_PROVIDER_TEST: ${{ secrets.LIVE_PROVIDER_TEST }}
+          CALENDAR_BASE_URL: ${{ secrets.CALENDAR_BASE_URL }}
+          CALENDAR_TOKEN: ${{ secrets.CALENDAR_TOKEN }}
+          CALENDAR_TEST_SERVICE_ID: ${{ secrets.CALENDAR_TEST_SERVICE_ID }}
+          CALENDAR_TEST_TASK_ID: ${{ secrets.CALENDAR_TEST_TASK_ID }}
+          CALENDAR_TEST_LEAD_ID: ${{ secrets.CALENDAR_TEST_LEAD_ID }}
+          CALENDAR_TEST_REQUESTED_TIME: ${{ secrets.CALENDAR_TEST_REQUESTED_TIME }}
+          CALENDAR_TEST_DURATION_MINUTES: ${{ secrets.CALENDAR_TEST_DURATION_MINUTES }}
+        run: |
+          test "$LIVE_PROVIDER_TEST" = "true" || { echo "LIVE_PROVIDER_TEST must be true"; exit 1; }
+          test -n "$CALENDAR_BASE_URL" || { echo "CALENDAR_BASE_URL is missing"; exit 1; }
+          test -n "$CALENDAR_TOKEN" || { echo "CALENDAR_TOKEN is missing"; exit 1; }
+          test -n "$CALENDAR_TEST_SERVICE_ID" || { echo "CALENDAR_TEST_SERVICE_ID is missing"; exit 1; }
+          test -n "$CALENDAR_TEST_TASK_ID" || { echo "CALENDAR_TEST_TASK_ID is missing"; exit 1; }
+          test -n "$CALENDAR_TEST_LEAD_ID" || { echo "CALENDAR_TEST_LEAD_ID is missing"; exit 1; }
+          test -n "$CALENDAR_TEST_REQUESTED_TIME" || { echo "CALENDAR_TEST_REQUESTED_TIME is missing"; exit 1; }
+          test -n "$CALENDAR_TEST_DURATION_MINUTES" || { echo "CALENDAR_TEST_DURATION_MINUTES is missing"; exit 1; }
+
+      - name: Execute one real non-production provider booking
+        env:
+          LIVE_PROVIDER_TEST: ${{ secrets.LIVE_PROVIDER_TEST }}
+          CALENDAR_BASE_URL: ${{ secrets.CALENDAR_BASE_URL }}
+          CALENDAR_TOKEN: ${{ secrets.CALENDAR_TOKEN }}
+          CALENDAR_TEST_SERVICE_ID: ${{ secrets.CALENDAR_TEST_SERVICE_ID }}
+          CALENDAR_TEST_TASK_ID: ${{ secrets.CALENDAR_TEST_TASK_ID }}
+          CALENDAR_TEST_LEAD_ID: ${{ secrets.CALENDAR_TEST_LEAD_ID }}
+          CALENDAR_TEST_REQUESTED_TIME: ${{ secrets.CALENDAR_TEST_REQUESTED_TIME }}
+          CALENDAR_TEST_DURATION_MINUTES: ${{ secrets.CALENDAR_TEST_DURATION_MINUTES }}
+        run: node ./src/business/real-calendar-provider-live-gate-test.js
