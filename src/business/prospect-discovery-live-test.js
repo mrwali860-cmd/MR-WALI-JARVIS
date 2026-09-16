@@ -5,8 +5,11 @@ const ProspectDiscoveryLive = require("./prospect-discovery-live");
 
 async function run() {
   const originalFetch = global.fetch;
+  const originalApifyToken = process.env.APIFY_TOKEN;
   const calls = [];
   let pollCount = 0;
+
+  delete process.env.APIFY_TOKEN;
 
   global.fetch = async (url, options = {}) => {
     calls.push({ url, options });
@@ -31,7 +34,7 @@ async function run() {
     const blockedResult = await blocked.discover();
     assert.strictEqual(blockedResult.status, "BLOCKED");
 
-    const live = new ProspectDiscoveryLive({ token: "TEST_TOKEN", limit: 2, query: "real estate agency Dubai" });
+    const live = new ProspectDiscoveryLive({ token: "TEST_TOKEN", limit: 2, query: "realestate agency Dubai" });
     const result = await live.discover();
     assert.strictEqual(result.executed, true);
     assert.strictEqual(result.status, "COMPLETE");
@@ -50,6 +53,11 @@ async function run() {
     console.log("Live Prospect Discovery V1 contract tests: PASS");
   } finally {
     global.fetch = originalFetch;
+    if (originalApifyToken === undefined) {
+      delete process.env.APIFY_TOKEN;
+    } else {
+      process.env.APIFY_TOKEN = originalApifyToken;
+    }
   }
 }
 
