@@ -41,7 +41,7 @@ const HttpCalendarProviderV1 = require("./http-calendar-provider-v1");
     assert.strictEqual(result.booking.booking_id, "booking_001");
     assert.ok(!JSON.stringify(result).includes("secret-token"));
 
-    await assert.rejects(
+    assert.throws(
         () => new HttpCalendarProviderV1({ baseUrl: "https://calendar.example.test" }),
         /CALENDAR_TOKEN_REQUIRED/
     );
