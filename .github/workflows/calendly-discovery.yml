@@ -1,0 +1,26 @@
+name: Calendly Discovery
+
+on:
+  workflow_dispatch:
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discover Calendly Event Types
+        env:
+          CALENDAR_TOKEN: ${{ secrets.CALENDAR_TOKEN }}
+        run: |
+          set -e
+          USER=
+          USER_URI=
+          echo "USER_URI="
+
+          curl -sS \
+            -H "Authorization: Bearer " \
+            --get \
+            --data-urlencode "user=" \
+            --data-urlencode "active=true" \
+            --data-urlencode "count=100" \
+            https://api.calendly.com/event_types \
+            | jq '.collection[] | {name, uri, scheduling_url}'
