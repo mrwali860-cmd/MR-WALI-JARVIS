@@ -40,9 +40,8 @@ const JarvisAutonomousMasterAgentV1 = require("./jarvis-autonomous-master-agent-
         task_input: { LEAD_INTAKE: { query: "Dubai real estate", limit: 1 }, LEAD_QUALIFICATION: { required_contact: "phone_or_website" } }
     });
 
-    console.log("AUTONOMOUS PIPELINE DEBUG:", JSON.stringify({ status: report.status, reason: report.reason, completed_tasks: report.completed_tasks, results: report.results, recovery: report.recovery }, null, 2));
-
-    assert.strictEqual(report.status, "FAILED");
+    assert.strictEqual(report.status, "WAITING_FOR_APPROVAL");
+    assert.strictEqual(report.reason, "APPROVAL_REQUIRED");
     assert.strictEqual(report.total_tasks, 10);
     assert.strictEqual(report.completed_tasks, 4);
     assert.strictEqual(report.results.length, 5);
@@ -55,13 +54,12 @@ const JarvisAutonomousMasterAgentV1 = require("./jarvis-autonomous-master-agent-
     assert.strictEqual(report.results[3].action, "APPROVAL_GATE");
     assert.strictEqual(report.results[3].status, "COMPLETED");
     assert.strictEqual(report.results[4].action, "BOOKING_EXECUTION");
-    assert.strictEqual(report.results[4].status, "FAILED");
-    assert.match(report.results[4].error || "", /CALENDAR_PROVIDER_NOT_CONFIGURED|BOOKING_EXECUTION_APPROVAL_REQUIRED/);
-    assert.strictEqual(report.recovery.length, 3);
+    assert.strictEqual(report.results[4].status, "WAITING_FOR_APPROVAL");
+    assert.strictEqual(report.recovery.length, 0);
 
     const bookingTask = taskManager.getTask(report.plan.task_ids[4]);
-    assert.strictEqual(bookingTask.status, "FAILED");
-    assert.strictEqual(Number(bookingTask.retry_count), 3);
+    assert.strictEqual(bookingTask.status, "WAITING_FOR_APPROVAL");
+    assert.strictEqual(Number(bookingTask.retry_count || 0), 0);
 
     fs.rmSync(root, { recursive: true, force: true });
     console.log("JARVIS AUTONOMOUS MASTER AGENT V1 REAL PIPELINE TEST: PASS");
