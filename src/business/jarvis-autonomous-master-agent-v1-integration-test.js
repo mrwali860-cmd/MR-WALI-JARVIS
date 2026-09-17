@@ -40,6 +40,8 @@ const JarvisAutonomousMasterAgentV1 = require("./jarvis-autonomous-master-agent-
         task_input: { LEAD_INTAKE: { query: "Dubai real estate", limit: 1 }, LEAD_QUALIFICATION: { required_contact: "phone_or_website" } }
     });
 
+    console.log("AUTONOMOUS PIPELINE DEBUG:", JSON.stringify({ status: report.status, reason: report.reason, completed_tasks: report.completed_tasks, results: report.results, recovery: report.recovery }, null, 2));
+
     assert.strictEqual(report.status, "FAILED");
     assert.strictEqual(report.total_tasks, 10);
     assert.strictEqual(report.completed_tasks, 4);
