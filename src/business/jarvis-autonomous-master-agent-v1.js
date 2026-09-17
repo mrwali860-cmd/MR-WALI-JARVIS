@@ -10,12 +10,9 @@ const RealTaskExecutor = require("./real-task-executor");
 /**
  * JARVIS Autonomous Master Agent V1.
  *
- * Converts a business goal into an execution plan, runs the existing
- * TaskManager -> Orchestrator -> RealTaskExecutor pipeline, stops at policy
- * approval gates, performs bounded recovery, and returns evidence.
- *
- * V1 deliberately uses deterministic planning. Model-based planning can be
- * added behind the same contract later without changing execution ownership.
+ * Turns a business goal into an execution plan, executes canonical task
+ * actions through the existing Orchestrator, stops at approval gates, and
+ * performs bounded recovery. Execution ownership stays in Orchestrator.
  */
 class JarvisAutonomousMasterAgentV1 extends ComponentContract {
     constructor({ serviceManager, taskManager, orchestrator, executor, serviceIntegration, maxRetries = 3 } = {}) {
@@ -23,15 +20,8 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
         this.serviceManager = serviceManager || new ServiceManager();
         this.taskManager = taskManager || new TaskManager();
         this.executor = executor || new RealTaskExecutor({ taskManager: this.taskManager });
-        this.orchestrator = orchestrator || new Orchestrator({
-            serviceManager: this.serviceManager,
-            taskManager: this.taskManager,
-            executor: this.executor
-        });
-        this.serviceIntegration = serviceIntegration || new ServiceManagerIntegration({
-            serviceManager: this.serviceManager,
-            taskManager: this.taskManager
-        });
+        this.orchestrator = orchestrator || new Orchestrator({ serviceManager: this.serviceManager, taskManager: this.taskManager, executor: this.executor });
+        this.serviceIntegration = serviceIntegration || new ServiceManagerIntegration({ serviceManager: this.serviceManager, taskManager: this.taskManager });
         this.maxRetries = Number.isInteger(maxRetries) && maxRetries >= 0 ? maxRetries : 3;
         this.runs = new Map();
     }
@@ -39,7 +29,6 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
     createPlan(input = {}) {
         const goal = String(input.goal || "").trim();
         if (!goal) throw new Error("GOAL_REQUIRED");
-
         const servicePlan = this.serviceIntegration.createServicePlan({
             service_id: input.service_id,
             client: input.client || "INTERNAL",
@@ -47,7 +36,6 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
             revenue_amount: input.revenue_amount,
             currency: input.currency
         });
-
         return {
             plan_id: `PLAN_${Date.now()}`,
             goal,
@@ -78,23 +66,25 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
                 if (refreshed.status === "BLOCKED") {
                     return this.finishRun(plan, requestPrefix, results, recovery, "BLOCKED", "DEPENDENCIES_NOT_COMPLETE", startedAt);
                 }
+            } else if (task.status === "CREATED") {
+                this.taskManager.markReady(taskId);
             }
 
             let attempt = 0;
             let result;
             while (attempt <= this.maxRetries) {
                 attempt += 1;
+                const currentTask = this.taskManager.getTask(taskId);
                 result = await this.orchestrator.executeTask({
                     service_id: plan.service_id,
                     task_id: taskId,
-                    action: "EXECUTE_TASK",
+                    action: currentTask.action,
                     request_id: `${requestPrefix}_${String(taskId).replace(/[^A-Za-z0-9_-]/g, "_")}_${attempt}`,
                     approval_context: approvalContext,
-                    input: taskInput[task.action] || taskInput[taskId] || null
+                    input: taskInput[currentTask.action] || taskInput[taskId] || null
                 });
 
                 if (result.status !== "FAILED") break;
-
                 if (attempt <= this.maxRetries) {
                     this.taskManager.retryTask(taskId, {
                         reason: "AUTONOMOUS_BOUNDED_RETRY",
@@ -105,7 +95,14 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
                 }
             }
 
-            results.push({ task_id: taskId, action: task.action, attempts: attempt, status: result.status, result: result.result || null, error: result.error || null });
+            results.push({
+                task_id: taskId,
+                action: task.action,
+                attempts: attempt,
+                status: result.status,
+                result: result.result || null,
+                error: result.error || null
+            });
 
             if (result.status === "WAITING_FOR_APPROVAL") {
                 return this.finishRun(plan, requestPrefix, results, recovery, "WAITING_FOR_APPROVAL", result.reason, startedAt);
@@ -136,9 +133,7 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
         return report;
     }
 
-    getRun(requestId) {
-        return this.runs.get(requestId) || null;
-    }
+    getRun(requestId) { return this.runs.get(requestId) || null; }
 }
 
 module.exports = JarvisAutonomousMasterAgentV1;
