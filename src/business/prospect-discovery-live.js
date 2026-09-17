@@ -7,7 +7,9 @@
  */
 class ProspectDiscoveryLive {
   constructor(options = {}) {
-    this.token = process.env.APIFY_TOKEN || options.token || null;
+    this.token = Object.prototype.hasOwnProperty.call(options, "token")
+      ? options.token
+      : (process.env.APIFY_TOKEN || null);
     this.limit = options.limit || 15;
     this.query = options.query || "real estate agency Dubai";
   }
