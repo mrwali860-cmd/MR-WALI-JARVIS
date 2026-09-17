@@ -13,10 +13,13 @@ const RealTaskExecutor = require("./real-task-executor");
  * Turns a business goal into an execution plan, executes canonical task
  * actions through the existing Orchestrator, stops at approval gates, and
  * performs bounded recovery. Execution ownership stays in Orchestrator.
+ *
+ * V1.1 adds in-process pause/resume: completed tasks are skipped on resume
+ * and an approval-paused run continues from the first incomplete task.
  */
 class JarvisAutonomousMasterAgentV1 extends ComponentContract {
     constructor({ serviceManager, taskManager, orchestrator, executor, serviceIntegration, maxRetries = 3 } = {}) {
-        super({ id: "JARVIS_AUTONOMOUS_MASTER_AGENT_V1", name: "JARVIS Autonomous Master Agent", version: "1.0.0", status: "AVAILABLE" });
+        super({ id: "JARVIS_AUTONOMOUS_MASTER_AGENT_V1", name: "JARVIS Autonomous Master Agent", version: "1.1.0", status: "AVAILABLE" });
         this.serviceManager = serviceManager || new ServiceManager();
         this.taskManager = taskManager || new TaskManager();
         this.executor = executor || new RealTaskExecutor({ taskManager: this.taskManager });
@@ -59,6 +62,19 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
         for (const taskId of plan.task_ids) {
             const task = this.taskManager.getTask(taskId);
             if (!task) throw new Error(`PLAN_TASK_MISSING: ${taskId}`);
+
+            if (task.status === "COMPLETED") {
+                results.push({
+                    task_id: taskId,
+                    action: task.action,
+                    attempts: 0,
+                    status: "COMPLETED",
+                    result: task.result || null,
+                    error: null,
+                    resumed: true
+                });
+                continue;
+            }
 
             if (!this.taskManager.areDependenciesComplete(taskId)) {
                 this.taskManager.markReady(taskId);
@@ -113,6 +129,19 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
         }
 
         return this.finishRun(plan, requestPrefix, results, recovery, "COMPLETED", null, startedAt);
+    }
+
+    async resumeRun(requestId, input = {}) {
+        const previous = this.getRun(requestId);
+        if (!previous) throw new Error("RUN_NOT_FOUND");
+        if (previous.status !== "WAITING_FOR_APPROVAL") throw new Error("RUN_NOT_RESUMABLE");
+
+        return this.executeGoal({
+            plan: previous.plan,
+            request_id: requestId,
+            approval_context: input.approval_context || {},
+            task_input: input.task_input || {}
+        });
     }
 
     finishRun(plan, requestId, results, recovery, status, reason, startedAt) {
