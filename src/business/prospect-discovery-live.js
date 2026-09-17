@@ -1,7 +1,5 @@
 "use strict";
 
-const { ApifyClient } = require("apify-client");
-
 /**
  * Prospect Discovery Live - Level 1
  * Finds real Dubai Real Estate agencies via Apify Google Maps.
@@ -27,7 +25,28 @@ class ProspectDiscoveryLive {
       };
     }
 
+    if (limit < 1 || limit > 100) {
+      return {
+        executed: false,
+        status: "BLOCKED",
+        message: "limit must be between 1 and 100",
+        prospects: []
+      };
+    }
+
     console.log(`[ProspectDiscoveryLive] Searching: "${query}" | Limit: ${limit}`);
+
+    let ApifyClient;
+    try {
+      ApifyClient = require("apify-client").ApifyClient;
+    } catch (error) {
+      return {
+        executed: false,
+        status: "FAILED",
+        message: "apify-client package not installed. Run: npm install apify-client",
+        prospects: []
+      };
+    }
 
     try {
       const client = new ApifyClient({ token: this.token });
