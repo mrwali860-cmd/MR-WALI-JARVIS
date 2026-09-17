@@ -13,7 +13,13 @@ class Orchestrator extends ComponentContract {
         this.serviceManager = serviceManager;
         this.taskManager = taskManager;
         this.riskPolicy = riskPolicy || new RiskApprovalPolicy();
-        this.executor = executor || (async ({ action, task_id }) => ({ simulated: true, action, task_id }));
+        if (typeof executor === "function") {
+            this.executor = executor;
+        } else if (executor && typeof executor.execute === "function") {
+            this.executor = executor.execute.bind(executor);
+        } else {
+            this.executor = async ({ action, task_id }) => ({ simulated: true, action, task_id });
+        }
         this.executionTraces = new Map();
     }
 
