@@ -16,6 +16,7 @@ const RealTaskExecutor = require("./src/business/real-task-executor");
 const DashboardActionBoundary = require("./src/business/dashboard-actions");
 const OperatorConsoleV4TaskCommand = require("./src/business/operator-console-v4-real-task-command");
 const ProspectDiscoveryLive = require("./src/business/prospect-discovery-live");
+const OutreachLive = require("./src/business/outreach-live");
 const JarvisChatV2 = require("./src/business/jarvis-chat-v2");
 
 const app = express();
@@ -42,9 +43,78 @@ function getMemorySummary() { const memory = loadMemory(); if (!memory.memories.
 function loadState() { return readJSON(STATE_FILE, { activeMission: null, tasks: [], updatedAt: null }); }
 function saveState(state) { state.updatedAt = new Date().toISOString(); writeJSON(STATE_FILE, state); }
 function startFirstClientMission() { const state = loadState(); state.activeMission = { id: "FIRST_AI_AUTOMATION_CLIENT", name: "Get First AI Automation Client", status: "ACTIVE", currentStage: "PROSPECT_DISCOVERY", targetMarket: "Dubai Real Estate", prospectTarget: 20, prospectsFound: 0, startedAt: new Date().toISOString() }; state.tasks = [{ id: "PROSPECT_DISCOVERY", name: "Find 20 Dubai real estate prospects", status: "READY" }, { id: "QUALIFICATION", name: "Qualify prospects", status: "LOCKED" }, { id: "DECISION_MAKER", name: "Identify decision makers", status: "LOCKED" }, { id: "OUTREACH", name: "Prepare personalized outreach", status: "LOCKED" }]; saveState(state); return state; }
-function getMissionStatus() { const state = loadState(); if (!state.activeMission) return "No active mission. Tell me your goal and I will create one."; const mission = state.activeMission; return [`Mission: ${mission.name}`, `Status: ${mission.status}`, `Current Stage: ${mission.currentStage}`, `Market: ${mission.targetMarket}`, `Prospects: ${mission.prospectsFound}/${mission.prospectTarget}`, "Next Action: Find the first prospects"].join("\n"); }
-function analyzeCommand(message) { const text = message.toLowerCase(); if (text.includes("show my memory") || text.includes("show memory")) return { type: "MEMORY", action: "SHOW_MEMORY" }; if (text.includes("show mission") || text.includes("mission status") || text.includes("show status")) return { type: "MISSION", action: "SHOW_MISSION" }; if (text.includes("first ai automation client") || text.includes("first automation client") || text.includes("get my first client")) return { type: "CLIENT_ACQUISITION", action: "START_FIRST_CLIENT_MISSION" }; if (text.includes("start prospect discovery") || text.includes("prospect discovery") || text.includes("find prospects")) return { type: "LEAD_ACQUISITION", action: "LEAD_DISCOVERY" }; return { type: "GENERAL", action: "ANALYZE" }; }
-async function executeAction(result, message) { if (result.action === "SHOW_MEMORY") return { executed: true, status: "COMPLETE", message: getMemorySummary() }; if (result.action === "SHOW_MISSION") return { executed: true, status: "COMPLETE", message: getMissionStatus() }; if (result.action === "START_FIRST_CLIENT_MISSION") { const state = startFirstClientMission(); return { executed: true, status: "ACTIVE", message: `Mission activated: Get your first AI automation client.\n\nCurrent stage: Prospect Discovery\nTarget: ${state.activeMission.prospectTarget} Dubai real estate prospects.\n\nNext action: Start prospect discovery.` }; } if (result.action === "LEAD_DISCOVERY") { const state = loadState(); if (!state.activeMission) return { executed: false, status: "BLOCKED", message: "No active mission found. First start your client acquisition mission." }; const discovery = await discoverProspects(); if (!discovery.executed) return discovery; state.activeMission.currentStage = "PROSPECT_DISCOVERY"; state.activeMission.status = "ACTIVE"; state.activeMission.prospectsFound = discovery.prospects.length; state.prospects = discovery.prospects; const task = state.tasks.find(item => item.id === "PROSPECT_DISCOVERY"); if (task) task.status = "COMPLETE"; saveState(state); const prospectList = discovery.prospects.map((p, i) => `${i + 1}. ${p.name}${p.phone ? ` | ${p.phone}` : ""}${p.website ? ` | ${p.website}` : ""}`).join("\n"); return { executed: true, status: "COMPLETE", message: `Prospect Discovery complete.\n\nFound ${discovery.prospects.length} real prospects:\n\n${prospectList}\n\nNext action: Identify decision makers.` }; } return { executed: false, status: "ANALYZED", message: `Command analyzed: "${message}"` }; }
+function getMissionStatus() { const state = loadState(); if (!state.activeMission) return "No active mission. Tell me your goal and I will create one."; const mission = state.activeMission; const outreachCount = (state.outreachMessages || []).length; return [`Mission: ${mission.name}`, `Status: ${mission.status}`, `Current Stage: ${mission.currentStage}`, `Market: ${mission.targetMarket}`, `Prospects: ${mission.prospectsFound}/${mission.prospectTarget}`, `Outreach prepared: ${outreachCount}`, "Next Action: " + (mission.currentStage === "OUTREACH" ? "Approve outreach messages" : "Continue pipeline")].join("\n"); }
+function analyzeCommand(message) { const text = message.toLowerCase(); if (text.includes("show my memory") || text.includes("show memory")) return { type: "MEMORY", action: "SHOW_MEMORY" }; if (text.includes("show mission") || text.includes("mission status") || text.includes("show status")) return { type: "MISSION", action: "SHOW_MISSION" }; if (text.includes("first ai automation client") || text.includes("first automation client") || text.includes("get my first client")) return { type: "CLIENT_ACQUISITION", action: "START_FIRST_CLIENT_MISSION" }; if (text.includes("start prospect discovery") || text.includes("prospect discovery") || text.includes("find prospects")) return { type: "LEAD_ACQUISITION", action: "LEAD_DISCOVERY" }; if (text.includes("prepare outreach") || text.includes("start outreach") || text.includes("outreach messages") || text.includes("generate messages")) return { type: "OUTREACH", action: "PREPARE_OUTREACH" }; if (text.includes("approve outreach") || text.includes("approve messages") || text.includes("approve all")) return { type: "OUTREACH", action: "APPROVE_OUTREACH" }; if (text.includes("show outreach") || text.includes("list outreach")) return { type: "OUTREACH", action: "SHOW_OUTREACH" }; return { type: "GENERAL", action: "ANALYZE" }; }
+async function executeAction(result, message) {
+  if (result.action === "SHOW_MEMORY") return { executed: true, status: "COMPLETE", message: getMemorySummary() };
+  if (result.action === "SHOW_MISSION") return { executed: true, status: "COMPLETE", message: getMissionStatus() };
+  if (result.action === "START_FIRST_CLIENT_MISSION") {
+    const state = startFirstClientMission();
+    return { executed: true, status: "ACTIVE", message: `Mission activated: Get your first AI automation client.\n\nCurrent stage: Prospect Discovery\nTarget: ${state.activeMission.prospectTarget} Dubai real estate prospects.\n\nNext action: Start prospect discovery.` };
+  }
+  if (result.action === "LEAD_DISCOVERY") {
+    const state = loadState();
+    if (!state.activeMission) return { executed: false, status: "BLOCKED", message: "No active mission found. First start your client acquisition mission." };
+    const discovery = await discoverProspects();
+    if (!discovery.executed) return discovery;
+    state.activeMission.currentStage = "PROSPECT_DISCOVERY";
+    state.activeMission.status = "ACTIVE";
+    state.activeMission.prospectsFound = discovery.prospects.length;
+    state.prospects = discovery.prospects;
+    const task = state.tasks.find(item => item.id === "PROSPECT_DISCOVERY");
+    if (task) task.status = "COMPLETE";
+    const outreachTask = state.tasks.find(item => item.id === "OUTREACH");
+    if (outreachTask) outreachTask.status = "READY";
+    saveState(state);
+    const prospectList = discovery.prospects.map((p, i) => `${i + 1}. ${p.name}${p.phone ? ` | ${p.phone}` : ""}${p.website ? ` | ${p.website}` : ""}`).join("\n");
+    return { executed: true, status: "COMPLETE", message: `Prospect Discovery complete.\n\nFound ${discovery.prospects.length} real prospects:\n\n${prospectList}\n\nNext action: Type "prepare outreach" to generate messages.` };
+  }
+  if (result.action === "PREPARE_OUTREACH") {
+    const state = loadState();
+    if (!state.prospects || !state.prospects.length) {
+      return { executed: false, status: "BLOCKED", message: "No prospects in memory. Run prospect discovery first." };
+    }
+    const outreach = new OutreachLive();
+    const prepared = outreach.prepare(state.prospects);
+    if (!prepared.executed) return prepared;
+    state.outreachMessages = prepared.messages;
+    if (state.activeMission) state.activeMission.currentStage = "OUTREACH";
+    const task = (state.tasks || []).find(item => item.id === "OUTREACH");
+    if (task) task.status = "PENDING_APPROVAL";
+    saveState(state);
+    const preview = prepared.messages.slice(0, 3).map((m, i) => `--- Message ${i + 1} (${m.prospect_name}) ---\n${m.body}`).join("\n\n");
+    return {
+      executed: true,
+      status: "COMPLETE",
+      message: `Prepared ${prepared.total} outreach messages.\n\nPreview (first 3):\n\n${preview}\n\n...and ${Math.max(0, prepared.total - 3)} more.\n\nNext: Type "approve outreach" to approve all, or review and tell me which to approve.`
+    };
+  }
+  if (result.action === "APPROVE_OUTREACH") {
+    const state = loadState();
+    if (!state.outreachMessages || !state.outreachMessages.length) {
+      return { executed: false, status: "BLOCKED", message: "No outreach messages to approve. Run prepare outreach first." };
+    }
+    const outreach = new OutreachLive();
+    const approved = outreach.approve(state.outreachMessages);
+    state.outreachMessages = approved.messages;
+    const task = (state.tasks || []).find(item => item.id === "OUTREACH");
+    if (task) task.status = "APPROVED";
+    saveState(state);
+    return {
+      executed: true,
+      status: "COMPLETE",
+      message: `Approved ${approved.total} messages.\n\nStatus: READY TO SEND\n\nNext Level 2 step: connect email/WhatsApp sender, or export messages to send manually.\nType "show outreach" to see full list.`
+    };
+  }
+  if (result.action === "SHOW_OUTREACH") {
+    const state = loadState();
+    const list = state.outreachMessages || [];
+    if (!list.length) return { executed: true, status: "COMPLETE", message: "No outreach messages prepared yet." };
+    const summary = list.map((m, i) => `${i + 1}. [${m.status}] ${m.prospect_name} | ${m.phone || m.website || "no contact"}`).join("\n");
+    return { executed: true, status: "COMPLETE", message: `Outreach list (${list.length}):\n\n${summary}` };
+  }
+  return { executed: false, status: "ANALYZED", message: `Command analyzed: "${message}"` };
+}
 app.get("/api/dashboard/status", (req, res) => { try { res.json(getDashboardReadModel().getStatus()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
 app.get("/api/dashboard/services", (req, res) => { try { res.json(getDashboardReadModel().getServices()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
 app.get("/api/dashboard/tasks", (req, res) => { try { res.json(getDashboardReadModel().getTasks()); } catch (error) { res.status(500).json({ success: false, error: error.message }); } });
@@ -57,6 +127,6 @@ app.post("/api/dashboard/actions", async (req, res) => { try { const result = aw
 app.get("/api/status", (req, res) => { const memory = loadMemory(); const state = loadState(); res.json({ name: "MR WALI JARVIS", status: "ONLINE", version: "2.0.0", brain: "LOCAL EXECUTION ENGINE", smartMemory: "ACTIVE", rememberedMemories: memory.memories.length, activeMission: state.activeMission }); });
 app.get("/api/memory", (req, res) => res.json(loadMemory())); app.get("/api/mission", (req, res) => res.json(loadState()));
 app.post("/ask", async (req, res) => { try { const { message } = req.body; if (!message) return res.status(400).json({ success: false, error: "Message is required" }); const result = analyzeCommand(message); const classification = classifyMemory(message); const saved = remember(message, classification); if (getOperatorConsoleV4TaskCommand().isTaskCommand(message)) { const taskResult = await getOperatorConsoleV4TaskCommand().execute(message, { approval_context: req.body.approval_context || {}, input: req.body.input || null }); return res.json({ success: taskResult.success, jarvis: taskResult.message, commandType: "TASK_EXECUTION", action: "EXECUTE_TASK", actionExecuted: taskResult.success, actionStatus: taskResult.status, request_id: taskResult.request_id || null, trace: taskResult.result?.trace || null, memoryCategory: classification.category, memorySaved: saved }); } if (result.action === "ANALYZE") { const chat = await getJarvisChatV2().respond(message, { mission: loadState().activeMission, recentMemory: loadMemory().memories.slice(-5) }); return res.json({ success: true, jarvis: chat.reply, commandType: result.type, action: result.action, actionExecuted: false, actionStatus: "ANALYZED", chatMode: chat.chatMode, memoryCategory: classification.category, memorySaved: saved }); } const actionResult = await executeAction(result, message); res.json({ success: true, jarvis: actionResult.message, commandType: result.type, action: result.action, actionExecuted: actionResult.executed, actionStatus: actionResult.status, chatMode: "FALLBACK", memoryCategory: classification.category, memorySaved: saved }); } catch (error) { res.status(500).json({ success: false, error: error.message, chatMode: "FALLBACK" }); } });
-const PORT = 3000; const server = app.listen(PORT, () => { console.log(`MR WALI JARVIS ONLINE: http://localhost:${PORT}`); console.log("SMART MEMORY SYSTEM: ACTIVE"); console.log("MISSION & ACTION ENGINE: ACTIVE"); });
+const PORT = 3000; const server = app.listen(PORT, () => { console.log(`MR WALI JARVIS ONLINE: http://localhost:${PORT}`); console.log("SMART MEMORY SYSTEM: ACTIVE"); console.log("MISSION & ACTION ENGINE: ACTIVE"); console.log("LEVEL 2 OUTREACH: READY"); });
 module.exports = { app, server, port: PORT, close: () => server.close() };
 async function discoverProspects() { const discovery = new ProspectDiscoveryLive({ limit: 20, query: "real estate agency Dubai" }); return discovery.discover(); }
