@@ -19,7 +19,16 @@ const PLAN_SCHEMA = Object.freeze({
                         properties: {
                             data: {
                                 type: "object",
-                                additionalProperties: true
+                                properties: {
+                                    source: { type: "string" },
+                                    query: { type: "string" },
+                                    market: { type: "string" },
+                                    client: { type: "string" },
+                                    limit: { type: "integer" },
+                                    notes: { type: "string" }
+                                },
+                                required: [],
+                                additionalProperties: false
                             }
                         },
                         required: ["data"],
