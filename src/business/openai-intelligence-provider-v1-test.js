@@ -16,7 +16,7 @@ async function run() {
                             {
                                 action: "LEAD_INTAKE",
                                 purpose: "Collect the lead details.",
-                                input: { source: "test" },
+                                input: { data: { source: "test" } },
                                 requires_approval: false
                             },
                             {
