@@ -155,11 +155,20 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
             basePlan.task_ids.map((taskId) => [this.taskManager.getTask(taskId)?.action, taskId])
         );
         const intelligentTaskIds = [];
+        const intelligentTaskInput = {};
         for (const step of intelligencePlan.steps) {
             if (!allowed.has(step.action)) throw new Error(`INTELLIGENCE_ACTION_NOT_ALLOWED: ${step.action}`);
             const taskId = taskByAction.get(step.action);
             if (!taskId) throw new Error(`INTELLIGENCE_TASK_NOT_FOUND: ${step.action}`);
             if (!intelligentTaskIds.includes(taskId)) intelligentTaskIds.push(taskId);
+
+            // The model can provide bounded planning input, but execution still
+            // goes through the existing Orchestrator and task contracts.
+            const value = step.input?.data?.value;
+            if (typeof value === "string" && value.trim()) {
+                if (step.action === "LEAD_INTAKE") intelligentTaskInput[step.action] = { query: value.trim() };
+                if (step.action === "LEAD_QUALIFICATION") intelligentTaskInput[step.action] = { required_contact: value.trim() };
+            }
         }
 
         // Preserve the planner's ordering while retaining any mandatory tasks
@@ -181,7 +190,7 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
             }
         }
 
-        return { ...basePlan, task_ids: orderedTaskIds, intelligence: intelligencePlan };
+        return { ...basePlan, task_ids: orderedTaskIds, intelligence: intelligencePlan, intelligent_task_input: intelligentTaskInput };
     }
 
     async executeIntelligentGoal(input = {}) {
