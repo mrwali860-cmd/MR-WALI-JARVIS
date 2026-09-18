@@ -55,7 +55,10 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
         const plan = input.plan || this.createPlan(input);
         const requestPrefix = input.request_id || `JARVIS_${Date.now()}`;
         const approvalContext = input.approval_context || {};
-        const taskInput = input.task_input || {};
+        const taskInput = {
+            ...(input.task_input || {}),
+            ...(plan.intelligent_task_input || {})
+        };
         const results = [];
         const recovery = [];
         const startedAt = Date.now();
