@@ -151,10 +151,25 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
         const availableActions = basePlan.task_ids.map((taskId) => this.taskManager.getTask(taskId)?.action).filter(Boolean);
         const intelligencePlan = await this.intelligenceProvider.plan({ goal: input.goal, context: input.context || {}, constraints: input.constraints || {}, available_actions: availableActions });
         const allowed = new Set(availableActions);
+        const taskByAction = new Map(
+            basePlan.task_ids.map((taskId) => [this.taskManager.getTask(taskId)?.action, taskId])
+        );
+        const intelligentTaskIds = [];
         for (const step of intelligencePlan.steps) {
             if (!allowed.has(step.action)) throw new Error(`INTELLIGENCE_ACTION_NOT_ALLOWED: ${step.action}`);
+            const taskId = taskByAction.get(step.action);
+            if (!taskId) throw new Error(`INTELLIGENCE_TASK_NOT_FOUND: ${step.action}`);
+            if (!intelligentTaskIds.includes(taskId)) intelligentTaskIds.push(taskId);
         }
-        return { ...basePlan, intelligence: intelligencePlan };
+
+        // Preserve the planner's ordering while retaining any mandatory tasks
+        // that the service plan contains but the model did not mention.
+        const orderedTaskIds = [
+            ...intelligentTaskIds,
+            ...basePlan.task_ids.filter((taskId) => !intelligentTaskIds.includes(taskId))
+        ];
+
+        return { ...basePlan, task_ids: orderedTaskIds, intelligence: intelligencePlan };
     }
 
     async executeIntelligentGoal(input = {}) {
