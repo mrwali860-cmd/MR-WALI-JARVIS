@@ -169,6 +169,18 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
             ...basePlan.task_ids.filter((taskId) => !intelligentTaskIds.includes(taskId))
         ];
 
+        // Intelligence may choose among allowed tasks, but it may not violate
+        // the existing dependency graph owned by TaskManager.
+        const position = new Map(orderedTaskIds.map((taskId, index) => [taskId, index]));
+        for (const taskId of orderedTaskIds) {
+            const task = this.taskManager.getTask(taskId);
+            for (const dependencyId of task?.dependencies || []) {
+                if (position.has(dependencyId) && position.get(dependencyId) > position.get(taskId)) {
+                    throw new Error(`INTELLIGENCE_DEPENDENCY_ORDER_INVALID: ${taskId}`);
+                }
+            }
+        }
+
         return { ...basePlan, task_ids: orderedTaskIds, intelligence: intelligencePlan };
     }
 
