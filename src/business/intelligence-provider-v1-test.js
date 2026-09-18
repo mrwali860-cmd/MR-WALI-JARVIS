@@ -6,7 +6,7 @@ const JarvisIntelligenceProviderV1 = require("./intelligence-provider-v1");
 (async () => {
     const provider = new JarvisIntelligenceProviderV1({
         model: "test-model",
-        generate: async (input) => ({
+        generate: async () => ({
             summary: "Create a controlled execution plan",
             steps: [
                 { action: "LEAD_INTAKE", purpose: "Collect lead data" },
@@ -28,10 +28,14 @@ const JarvisIntelligenceProviderV1 = require("./intelligence-provider-v1");
     assert.strictEqual(plan.steps[1].action, "LEAD_QUALIFICATION");
     assert.strictEqual(provider.getInfo().version, "1.0.0");
 
+    const unconfigured = new JarvisIntelligenceProviderV1();
     await assert.rejects(
-        () => provider.plan({ goal: "x" }),
+        () => unconfigured.plan({ goal: "x" }),
         /INTELLIGENCE_PROVIDER_NOT_CONFIGURED/
     );
 
     console.log("JARVIS INTELLIGENCE PROVIDER V1 TEST: PASS");
-})();
+})().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+});
