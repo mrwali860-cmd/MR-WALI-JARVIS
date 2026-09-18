@@ -58,6 +58,8 @@ const JarvisAutonomousMasterAgentV1 = require("./jarvis-autonomous-master-agent-
     assert.strictEqual(plan.intelligence.steps.length, 2);
     assert.strictEqual(plan.intelligence.steps[0].action, "LEAD_INTAKE");
     assert.strictEqual(plan.intelligence.steps[1].action, "LEAD_QUALIFICATION");
+    assert.deepStrictEqual(plan.intelligent_task_input.LEAD_INTAKE, { query: "real estate agency Dubai" });
+    assert.deepStrictEqual(plan.intelligent_task_input.LEAD_QUALIFICATION, { required_contact: "phone_or_website" });
 
     console.log("REAL INTELLIGENT MISSION CONTRACT TEST: PASS");
 })();
