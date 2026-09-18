@@ -57,5 +57,35 @@ const JarvisAutonomousMasterAgentV1 = require("./jarvis-autonomous-master-agent-
     assert.strictEqual(calls.length, 3);
     assert.strictEqual(agent.getRun("AUTO_TEST").status, "COMPLETED");
 
+    const intelligentProvider = {
+        async plan(input) {
+            assert.strictEqual(input.goal, "Intelligent benchmark");
+            assert.ok(input.available_actions.includes("LEAD_INTAKE"));
+            return {
+                goal: input.goal,
+                summary: "validated intelligent plan",
+                steps: [{ action: "LEAD_INTAKE", purpose: "start pipeline" }]
+            };
+        }
+    };
+    const intelligentAgent = new JarvisAutonomousMasterAgentV1({
+        taskManager: {
+            getTask(id) { return tasks.get(id) || null; },
+            areDependenciesComplete() { return true; },
+            markReady(id) { tasks.get(id).status = "READY"; return tasks.get(id); },
+            retryTask(id) { tasks.get(id).status = "READY"; return tasks.get(id); }
+        },
+        orchestrator,
+        serviceIntegration: {
+            createServicePlan() {
+                return { service_id: "AUTO_SERVICE_2", task_ids: ["T1"], task_count: 1, approval_gates: {}, execution_ready: true };
+            }
+        },
+        intelligenceProvider
+    });
+    tasks.get("T1").status = "CREATED";
+    const intelligentPlan = await intelligentAgent.createIntelligentPlan({ goal: "Intelligent benchmark" });
+    assert.strictEqual(intelligentPlan.intelligence.steps[0].action, "LEAD_INTAKE");
+
     console.log("JARVIS AUTONOMOUS MASTER AGENT V1 TEST: PASS");
 })();
