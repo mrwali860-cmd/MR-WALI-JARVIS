@@ -16,7 +16,14 @@ const PLAN_SCHEMA = Object.freeze({
                     purpose: { type: "string" },
                     input: {
                         type: "object",
-                        additionalProperties: true
+                        properties: {
+                            data: {
+                                type: "object",
+                                additionalProperties: true
+                            }
+                        },
+                        required: ["data"],
+                        additionalProperties: false
                     },
                     requires_approval: { type: "boolean" }
                 },
