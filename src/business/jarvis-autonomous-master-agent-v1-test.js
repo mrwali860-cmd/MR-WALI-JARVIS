@@ -57,7 +57,7 @@ const JarvisAutonomousMasterAgentV1 = require("./jarvis-autonomous-master-agent-
     assert.strictEqual(calls.length, 3);
     assert.strictEqual(agent.getRun("AUTO_TEST").status, "COMPLETED");
 
-    const intelligentProvider = {
+    const intelligenceProvider = {
         async plan(input) {
             assert.strictEqual(input.goal, "Intelligent benchmark");
             assert.ok(input.available_actions.includes("LEAD_INTAKE"));
