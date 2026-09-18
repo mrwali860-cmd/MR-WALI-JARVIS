@@ -89,8 +89,16 @@ async function main() {
     }
 
     const bookingResult = report.results.find((item) => item.action === "BOOKING_EXECUTION");
-    if (bookingResult && bookingResult.status !== "WAITING_FOR_APPROVAL") {
+    if (!bookingResult) {
+        throw new Error("SAFETY_GATE_FAILED_BOOKING_NOT_REACHED");
+    }
+    if (bookingResult.status !== "WAITING_FOR_APPROVAL") {
         throw new Error("SAFETY_GATE_FAILED_BOOKING_NOT_PAUSED");
+    }
+
+    const appointmentResult = report.results.find((item) => item.action === "APPOINTMENT_REQUEST");
+    if (!appointmentResult || appointmentResult.status !== "COMPLETED") {
+        throw new Error("REAL_MISSION_APPOINTMENT_REQUEST_NOT_COMPLETED");
     }
 
     if (report.completed_tasks < 1) {
