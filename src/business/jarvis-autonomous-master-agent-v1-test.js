@@ -64,7 +64,7 @@ const JarvisAutonomousMasterAgentV1 = require("./jarvis-autonomous-master-agent-
             return {
                 goal: input.goal,
                 summary: "validated intelligent plan",
-                steps: [{ action: "LEAD_INTAKE", purpose: "start pipeline" }]
+                steps: [{ action: "LEAD_INTAKE", purpose: "start pipeline", input: {}, requires_approval: false }]
             };
         }
     };
