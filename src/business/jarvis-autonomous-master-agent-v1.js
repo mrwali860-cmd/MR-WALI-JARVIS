@@ -18,13 +18,14 @@ const RealTaskExecutor = require("./real-task-executor");
  * and an approval-paused run continues from the first incomplete task.
  */
 class JarvisAutonomousMasterAgentV1 extends ComponentContract {
-    constructor({ serviceManager, taskManager, orchestrator, executor, serviceIntegration, maxRetries = 3 } = {}) {
+    constructor({ serviceManager, taskManager, orchestrator, executor, serviceIntegration, intelligenceProvider, maxRetries = 3 } = {}) {
         super({ id: "JARVIS_AUTONOMOUS_MASTER_AGENT_V1", name: "JARVIS Autonomous Master Agent", version: "1.1.0", status: "AVAILABLE" });
         this.serviceManager = serviceManager || new ServiceManager();
         this.taskManager = taskManager || new TaskManager();
         this.executor = executor || new RealTaskExecutor({ taskManager: this.taskManager });
         this.orchestrator = orchestrator || new Orchestrator({ serviceManager: this.serviceManager, taskManager: this.taskManager, executor: this.executor });
         this.serviceIntegration = serviceIntegration || new ServiceManagerIntegration({ serviceManager: this.serviceManager, taskManager: this.taskManager });
+        this.intelligenceProvider = intelligenceProvider || null;
         this.maxRetries = Number.isInteger(maxRetries) && maxRetries >= 0 ? maxRetries : 3;
         this.runs = new Map();
     }
@@ -142,6 +143,23 @@ class JarvisAutonomousMasterAgentV1 extends ComponentContract {
             approval_context: input.approval_context || {},
             task_input: input.task_input || {}
         });
+    }
+
+    async createIntelligentPlan(input = {}) {
+        if (!this.intelligenceProvider) throw new Error("INTELLIGENCE_PROVIDER_REQUIRED");
+        const basePlan = this.createPlan(input);
+        const availableActions = basePlan.task_ids.map((taskId) => this.taskManager.getTask(taskId)?.action).filter(Boolean);
+        const intelligencePlan = await this.intelligenceProvider.plan({ goal: input.goal, context: input.context || {}, constraints: input.constraints || {}, available_actions: availableActions });
+        const allowed = new Set(availableActions);
+        for (const step of intelligencePlan.steps) {
+            if (!allowed.has(step.action)) throw new Error(`INTELLIGENCE_ACTION_NOT_ALLOWED: ${step.action}`);
+        }
+        return { ...basePlan, intelligence: intelligencePlan };
+    }
+
+    async executeIntelligentGoal(input = {}) {
+        const plan = input.plan || await this.createIntelligentPlan(input);
+        return this.executeGoal({ ...input, plan });
     }
 
     finishRun(plan, requestId, results, recovery, status, reason, startedAt) {
