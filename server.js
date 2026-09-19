@@ -44,7 +44,7 @@ function loadState() { return readJSON(STATE_FILE, { activeMission: null, tasks:
 function saveState(state) { state.updatedAt = new Date().toISOString(); writeJSON(STATE_FILE, state); }
 function startFirstClientMission() { const state = loadState(); state.activeMission = { id: "FIRST_AI_AUTOMATION_CLIENT", name: "Get First AI Automation Client", status: "ACTIVE", currentStage: "PROSPECT_DISCOVERY", targetMarket: "Dubai Real Estate", prospectTarget: 20, prospectsFound: 0, startedAt: new Date().toISOString() }; state.tasks = [{ id: "PROSPECT_DISCOVERY", name: "Find 20 Dubai real estate prospects", status: "READY" }, { id: "QUALIFICATION", name: "Qualify prospects", status: "LOCKED" }, { id: "DECISION_MAKER", name: "Identify decision makers", status: "LOCKED" }, { id: "OUTREACH", name: "Prepare personalized outreach", status: "LOCKED" }]; saveState(state); return state; }
 function getMissionStatus() { const state = loadState(); if (!state.activeMission) return "No active mission. Tell me your goal and I will create one."; const mission = state.activeMission; const outreachCount = (state.outreachMessages || []).length; return [`Mission: ${mission.name}`, `Status: ${mission.status}`, `Current Stage: ${mission.currentStage}`, `Market: ${mission.targetMarket}`, `Prospects: ${mission.prospectsFound}/${mission.prospectTarget}`, `Outreach prepared: ${outreachCount}`, "Next Action: " + (mission.currentStage === "OUTREACH" ? "Approve outreach messages" : "Continue pipeline")].join("\n"); }
-function analyzeCommand(message) { const text = message.toLowerCase(); if (text.includes("show my memory") || text.includes("show memory")) return { type: "MEMORY", action: "SHOW_MEMORY" }; if (text.includes("show mission") || text.includes("mission status") || text.includes("show status")) return { type: "MISSION", action: "SHOW_MISSION" }; if (text.includes("first ai automation client") || text.includes("first automation client") || text.includes("get my first client")) return { type: "CLIENT_ACQUISITION", action: "START_FIRST_CLIENT_MISSION" }; if (text.includes("start prospect discovery") || text.includes("prospect discovery") || text.includes("find prospects")) return { type: "LEAD_ACQUISITION", action: "LEAD_DISCOVERY" }; if (text.includes("prepare outreach") || text.includes("start outreach") || text.includes("outreach messages") || text.includes("generate messages")) return { type: "OUTREACH", action: "PREPARE_OUTREACH" }; if (text.includes("approve outreach") || text.includes("approve messages") || text.includes("approve all")) return { type: "OUTREACH", action: "APPROVE_OUTREACH" }; if (text.includes("show outreach") || text.includes("list outreach")) return { type: "OUTREACH", action: "SHOW_OUTREACH" }; return { type: "GENERAL", action: "ANALYZE" }; }
+function analyzeCommand(message) { const text = message.toLowerCase(); if (text.includes("show my memory") || text.includes("show memory")) return { type: "MEMORY", action: "SHOW_MEMORY" }; if (text.includes("show mission") || text.includes("mission status") || text.includes("show status")) return { type: "MISSION", action: "SHOW_MISSION" }; if (text.includes("first ai automation client") || text.includes("first automation client") || text.includes("get my first client")) return { type: "CLIENT_ACQUISITION", action: "START_FIRST_CLIENT_MISSION" }; if (text.includes("start prospect discovery") || text.includes("prospect discovery") || text.includes("find prospects")) return { type: "LEAD_ACQUISITION", action: "LEAD_DISCOVERY" }; if (text.includes("prepare outreach") || text.includes("start outreach") || text.includes("outreach messages") || text.includes("generate messages")) return { type: "OUTREACH", action: "PREPARE_OUTREACH" }; if (text.includes("approve outreach") || text.includes("approve messages") || text.includes("approve all")) return { type: "OUTREACH", action: "APPROVE_OUTREACH" }; if (text.includes("export outreach") || text.includes("export messages")) return { type: "OUTREACH", action: "EXPORT_OUTREACH" }; if (text.includes("show outreach") || text.includes("list outreach")) return { type: "OUTREACH", action: "SHOW_OUTREACH" }; return { type: "GENERAL", action: "ANALYZE" }; }
 async function executeAction(result, message) {
   if (result.action === "SHOW_MEMORY") return { executed: true, status: "COMPLETE", message: getMemorySummary() };
   if (result.action === "SHOW_MISSION") return { executed: true, status: "COMPLETE", message: getMissionStatus() };
@@ -103,8 +103,20 @@ async function executeAction(result, message) {
     return {
       executed: true,
       status: "COMPLETE",
-      message: `Approved ${approved.total} messages.\n\nStatus: READY TO SEND\n\nNext Level 2 step: connect email/WhatsApp sender, or export messages to send manually.\nType "show outreach" to see full list.`
+      message: `Approved ${approved.total} messages.\n\nStatus: READY TO SEND\n\nNext: Type "export outreach" to save CSV + TXT files for manual send.`
     };
+  }
+  if (result.action === "EXPORT_OUTREACH") {
+    const state = loadState();
+    if (!state.outreachMessages || !state.outreachMessages.length) {
+      return { executed: false, status: "BLOCKED", message: "No outreach messages to export. Run prepare outreach first." };
+    }
+    const outreach = new OutreachLive({ exportDir: __dirname });
+    const exported = outreach.export(state.outreachMessages);
+    if (!exported.executed) return exported;
+    state.lastOutreachExport = { at: new Date().toISOString(), files: exported.files, total: exported.total };
+    saveState(state);
+    return { executed: true, status: "COMPLETE", message: exported.message };
   }
   if (result.action === "SHOW_OUTREACH") {
     const state = loadState();
