@@ -94,7 +94,7 @@ class OutreachLive {
    */
   export(messages = []) {
     const list = (Array.isArray(messages) ? messages : []).filter(
-      (m) => m.status === "APPROVED" || m.status === "PENDING_APPROVAL"
+      (m) => m.status === "APPROVED"
     );
 
     if (!list.length) {
