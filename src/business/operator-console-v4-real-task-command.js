@@ -17,6 +17,7 @@ class OperatorConsoleV4TaskCommand {
 
     resolveTarget(target) {
         if (!target) return null;
+        if (!this.orchestrator.serviceManager || !this.orchestrator.taskManager) return target;
         const service = this.orchestrator.serviceManager.getService(target.service_id);
         if (!service) return target;
         const exact = this.orchestrator.taskManager.getTask(target.task_id);
