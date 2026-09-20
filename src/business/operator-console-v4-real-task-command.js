@@ -15,6 +15,21 @@ class OperatorConsoleV4TaskCommand {
         this.orchestrator = orchestrator;
     }
 
+    resolveTarget(target) {
+        if (!target) return null;
+        if (!this.orchestrator.serviceManager || !this.orchestrator.taskManager) return target;
+        const service = this.orchestrator.serviceManager.getService(target.service_id);
+        if (!service) return target;
+        const exact = this.orchestrator.taskManager.getTask(target.task_id);
+        if (exact) return target;
+        const normalized = String(target.task_id).toUpperCase();
+        const resolvedTaskId = service.tasks.find((taskId) => {
+            const task = this.orchestrator.taskManager.getTask(taskId);
+            return task && String(task.action).toUpperCase() === normalized;
+        });
+        return resolvedTaskId ? { ...target, task_id: resolvedTaskId } : target;
+    }
+
     parse(message = "") {
         const text = String(message).trim();
         const match = text.match(/^(?:execute|run)\s+task\s+(\S+)\s+(\S+)$/i);
@@ -38,9 +53,10 @@ class OperatorConsoleV4TaskCommand {
         }
 
         const request_id = `v4-${crypto.randomUUID()}`;
+        const resolvedTarget = this.resolveTarget(target);
         try {
             const result = await this.orchestrator.executeTask({
-                ...target,
+                ...resolvedTarget,
                 action: "EXECUTE_TASK",
                 request_id,
                 approval_context,
@@ -52,8 +68,8 @@ class OperatorConsoleV4TaskCommand {
                 status: result.status,
                 request_id,
                 message: result.success
-                    ? `Task ${target.task_id} completed successfully.`
-                    : `Task ${target.task_id}: ${result.status}${result.reason ? ` — ${result.reason}` : ""}`,
+                    ? `Task ${resolvedTarget.task_id} completed successfully.`
+                    : `Task ${resolvedTarget.task_id}: ${result.status}${result.reason ? ` — ${result.reason}` : ""}`,
                 result
             };
         } catch (error) {

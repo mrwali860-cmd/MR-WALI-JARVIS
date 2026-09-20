@@ -15,6 +15,7 @@ const Orchestrator = require("./src/business/orchestrator");
 const RealTaskExecutor = require("./src/business/real-task-executor");
 const DashboardActionBoundary = require("./src/business/dashboard-actions");
 const OperatorConsoleV4TaskCommand = require("./src/business/operator-console-v4-real-task-command");
+const ServiceManagerIntegration = require("./src/business/service-manager-integration");
 const ProspectDiscoveryLive = require("./src/business/prospect-discovery-live");
 const OutreachLive = require("./src/business/outreach-live");
 const ProposalLive = require("./src/business/proposal-live");
@@ -31,8 +32,28 @@ let dashboardActionBoundary = null;
 let jarvisChatV2 = null;
 let operatorConsoleV4TaskCommand = null;
 let orchestrator = null;
+let serviceManagerIntegration = null;
 function getDashboardReadModel() { if (!dashboardReadModel) dashboardReadModel = new DashboardReadModel({ serviceManager: new ServiceManager(), taskManager: new TaskManager(), qa: new QualityAssurance(), clientApproval: new ClientApproval(), delivery: new Delivery(), revenue: new Revenue() }); return dashboardReadModel; }
-function getOrchestrator() { if (!orchestrator) { const dashboard = getDashboardReadModel(); orchestrator = new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager, executor: new RealTaskExecutor() }); } return orchestrator; }
+function getServiceManagerIntegration() {
+  if (!serviceManagerIntegration) {
+    const dashboard = getDashboardReadModel();
+    serviceManagerIntegration = new ServiceManagerIntegration({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager });
+  }
+  return serviceManagerIntegration;
+}
+function ensureFirstSellableServiceRuntime() {
+  const integration = getServiceManagerIntegration();
+  const serviceId = "AI_APPOINTMENT_BOOKING_AUTOMATION";
+  if (!integration.serviceManager.getService(serviceId)) {
+    return integration.createServicePlan({ service_id: serviceId, client: "JARVIS_RUNTIME", requirement: "AI Appointment Booking Automation" });
+  }
+  const service = integration.serviceManager.getService(serviceId);
+  if (!Array.isArray(service.tasks) || service.tasks.length === 0) {
+    return integration.createServicePlan({ service_id: serviceId, client: service.client || "JARVIS_RUNTIME", requirement: service.requirement || "AI Appointment Booking Automation" });
+  }
+  return { success: true, service_id: serviceId, task_ids: service.tasks, execution_ready: service.status === "READY" };
+}
+function getOrchestrator() { if (!orchestrator) { const dashboard = getDashboardReadModel(); ensureFirstSellableServiceRuntime(); orchestrator = new Orchestrator({ serviceManager: dashboard.serviceManager, taskManager: dashboard.taskManager, executor: new RealTaskExecutor({ taskManager: dashboard.taskManager }) }); } return orchestrator; }
 function getDashboardActionBoundary() { if (!dashboardActionBoundary) dashboardActionBoundary = new DashboardActionBoundary({ orchestrator: getOrchestrator() }); return dashboardActionBoundary; }
 function getJarvisChatV2() { if (!jarvisChatV2) jarvisChatV2 = new JarvisChatV2(); return jarvisChatV2; }
 function getOperatorConsoleV4TaskCommand() { if (!operatorConsoleV4TaskCommand) operatorConsoleV4TaskCommand = new OperatorConsoleV4TaskCommand({ orchestrator: getOrchestrator() }); return operatorConsoleV4TaskCommand; }
