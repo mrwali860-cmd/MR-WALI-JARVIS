@@ -18,6 +18,7 @@ const OperatorConsoleV4TaskCommand = require("./src/business/operator-console-v4
 const ProspectDiscoveryLive = require("./src/business/prospect-discovery-live");
 const OutreachLive = require("./src/business/outreach-live");
 const ProposalLive = require("./src/business/proposal-live");
+const DeliveryPlanLive = require("./src/business/delivery-plan-live");
 const JarvisChatV2 = require("./src/business/jarvis-chat-v2");
 
 const app = express();
@@ -43,9 +44,27 @@ function remember(message, classification) { if (!classification.shouldSave) ret
 function getMemorySummary() { const memory = loadMemory(); if (!memory.memories.length) return "I do not have any saved memories yet."; return memory.memories.slice(-10).map((item, index) => `${index + 1}. [${item.category}] ${item.message}`).join("\n"); }
 function loadState() { return readJSON(STATE_FILE, { activeMission: null, tasks: [], updatedAt: null }); }
 function saveState(state) { state.updatedAt = new Date().toISOString(); writeJSON(STATE_FILE, state); }
-function startFirstClientMission() { const state = loadState(); state.activeMission = { id: "FIRST_AI_AUTOMATION_CLIENT", name: "Get First AI Automation Client", status: "ACTIVE", currentStage: "PROSPECT_DISCOVERY", targetMarket: "Dubai Real Estate", prospectTarget: 20, prospectsFound: 0, startedAt: new Date().toISOString() }; state.tasks = [{ id: "PROSPECT_DISCOVERY", name: "Find 20 Dubai real estate prospects", status: "READY" }, { id: "QUALIFICATION", name: "Qualify prospects", status: "LOCKED" }, { id: "DECISION_MAKER", name: "Identify decision makers", status: "LOCKED" }, { id: "OUTREACH", name: "Prepare personalized outreach", status: "LOCKED" }, { id: "PROPOSAL", name: "Prepare service proposals", status: "LOCKED" }]; saveState(state); return state; }
-function getMissionStatus() { const state = loadState(); if (!state.activeMission) return "No active mission. Tell me your goal and I will create one."; const mission = state.activeMission; const outreachCount = (state.outreachMessages || []).length; const proposalCount = (state.proposals || []).length; return [`Mission: ${mission.name}`, `Status: ${mission.status}`, `Current Stage: ${mission.currentStage}`, `Market: ${mission.targetMarket}`, `Prospects: ${mission.prospectsFound}/${mission.prospectTarget}`, `Outreach prepared: ${outreachCount}`, `Proposals: ${proposalCount}`, "Next Action: " + (mission.currentStage === "PROPOSAL" ? "Approve proposals" : mission.currentStage === "OUTREACH" ? "Approve outreach or prepare proposal" : "Continue pipeline")].join("\n"); }
-function analyzeCommand(message) { const text = message.toLowerCase(); if (text.includes("show my memory") || text.includes("show memory")) return { type: "MEMORY", action: "SHOW_MEMORY" }; if (text.includes("show mission") || text.includes("mission status") || text.includes("show status")) return { type: "MISSION", action: "SHOW_MISSION" }; if (text.includes("first ai automation client") || text.includes("first automation client") || text.includes("get my first client")) return { type: "CLIENT_ACQUISITION", action: "START_FIRST_CLIENT_MISSION" }; if (text.includes("start prospect discovery") || text.includes("prospect discovery") || text.includes("find prospects")) return { type: "LEAD_ACQUISITION", action: "LEAD_DISCOVERY" }; if (text.includes("prepare proposal") || text.includes("start proposal") || text.includes("generate proposal")) return { type: "PROPOSAL", action: "PREPARE_PROPOSAL" }; if (text.includes("approve proposal") || text.includes("approve proposals")) return { type: "PROPOSAL", action: "APPROVE_PROPOSAL" }; if (text.includes("show proposal") || text.includes("list proposal") || text.includes("show proposals")) return { type: "PROPOSAL", action: "SHOW_PROPOSAL" }; if (text.includes("prepare outreach") || text.includes("start outreach") || text.includes("outreach messages") || text.includes("generate messages")) return { type: "OUTREACH", action: "PREPARE_OUTREACH" }; if (text.includes("approve outreach") || text.includes("approve messages")) return { type: "OUTREACH", action: "APPROVE_OUTREACH" }; if (text.includes("export outreach") || text.includes("export messages")) return { type: "OUTREACH", action: "EXPORT_OUTREACH" }; if (text.includes("show outreach") || text.includes("list outreach")) return { type: "OUTREACH", action: "SHOW_OUTREACH" }; return { type: "GENERAL", action: "ANALYZE" }; }
+function startFirstClientMission() { const state = loadState(); state.activeMission = { id: "FIRST_AI_AUTOMATION_CLIENT", name: "Get First AI Automation Client", status: "ACTIVE", currentStage: "PROSPECT_DISCOVERY", targetMarket: "Dubai Real Estate", prospectTarget: 20, prospectsFound: 0, startedAt: new Date().toISOString() }; state.tasks = [{ id: "PROSPECT_DISCOVERY", name: "Find 20 Dubai real estate prospects", status: "READY" }, { id: "QUALIFICATION", name: "Qualify prospects", status: "LOCKED" }, { id: "DECISION_MAKER", name: "Identify decision makers", status: "LOCKED" }, { id: "OUTREACH", name: "Prepare personalized outreach", status: "LOCKED" }, { id: "PROPOSAL", name: "Prepare service proposals", status: "LOCKED" }, { id: "DELIVERY", name: "Delivery plan QA and complete", status: "LOCKED" }]; saveState(state); return state; }
+function getMissionStatus() { const state = loadState(); if (!state.activeMission) return "No active mission. Tell me your goal and I will create one."; const mission = state.activeMission; const outreachCount = (state.outreachMessages || []).length; const proposalCount = (state.proposals || []).length; const deliveryCount = (state.deliveryPlans || []).length; return [`Mission: ${mission.name}`, `Status: ${mission.status}`, `Current Stage: ${mission.currentStage}`, `Market: ${mission.targetMarket}`, `Prospects: ${mission.prospectsFound}/${mission.prospectTarget}`, `Outreach: ${outreachCount}`, `Proposals: ${proposalCount}`, `Delivery plans: ${deliveryCount}`, "Next Action: Continue pipeline"].join("\n"); }
+function analyzeCommand(message) {
+  const text = message.toLowerCase();
+  if (text.includes("show my memory") || text.includes("show memory")) return { type: "MEMORY", action: "SHOW_MEMORY" };
+  if (text.includes("show mission") || text.includes("mission status") || text.includes("show status")) return { type: "MISSION", action: "SHOW_MISSION" };
+  if (text.includes("first ai automation client") || text.includes("first automation client") || text.includes("get my first client")) return { type: "CLIENT_ACQUISITION", action: "START_FIRST_CLIENT_MISSION" };
+  if (text.includes("start prospect discovery") || text.includes("prospect discovery") || text.includes("find prospects")) return { type: "LEAD_ACQUISITION", action: "LEAD_DISCOVERY" };
+  if (text.includes("prepare delivery") || text.includes("start delivery")) return { type: "DELIVERY", action: "PREPARE_DELIVERY" };
+  if (text.includes("run qa") || text.includes("qa delivery")) return { type: "DELIVERY", action: "RUN_QA_DELIVERY" };
+  if (text.includes("complete delivery") || text.includes("finish delivery")) return { type: "DELIVERY", action: "COMPLETE_DELIVERY" };
+  if (text.includes("show delivery") || text.includes("list delivery")) return { type: "DELIVERY", action: "SHOW_DELIVERY" };
+  if (text.includes("prepare proposal") || text.includes("start proposal") || text.includes("generate proposal")) return { type: "PROPOSAL", action: "PREPARE_PROPOSAL" };
+  if (text.includes("approve proposal") || text.includes("approve proposals")) return { type: "PROPOSAL", action: "APPROVE_PROPOSAL" };
+  if (text.includes("show proposal") || text.includes("list proposal") || text.includes("show proposals")) return { type: "PROPOSAL", action: "SHOW_PROPOSAL" };
+  if (text.includes("prepare outreach") || text.includes("start outreach") || text.includes("outreach messages") || text.includes("generate messages")) return { type: "OUTREACH", action: "PREPARE_OUTREACH" };
+  if (text.includes("approve outreach") || text.includes("approve messages")) return { type: "OUTREACH", action: "APPROVE_OUTREACH" };
+  if (text.includes("export outreach") || text.includes("export messages")) return { type: "OUTREACH", action: "EXPORT_OUTREACH" };
+  if (text.includes("show outreach") || text.includes("list outreach")) return { type: "OUTREACH", action: "SHOW_OUTREACH" };
+  return { type: "GENERAL", action: "ANALYZE" };
+}
 async function executeAction(result, message) {
   if (result.action === "SHOW_MEMORY") return { executed: true, status: "COMPLETE", message: getMemorySummary() };
   if (result.action === "SHOW_MISSION") return { executed: true, status: "COMPLETE", message: getMissionStatus() };
@@ -74,9 +93,7 @@ async function executeAction(result, message) {
   }
   if (result.action === "PREPARE_OUTREACH") {
     const state = loadState();
-    if (!state.prospects || !state.prospects.length) {
-      return { executed: false, status: "BLOCKED", message: "No prospects in memory. Run prospect discovery first." };
-    }
+    if (!state.prospects || !state.prospects.length) return { executed: false, status: "BLOCKED", message: "No prospects in memory. Run prospect discovery first." };
     const outreach = new OutreachLive();
     const prepared = outreach.prepare(state.prospects);
     if (!prepared.executed) return prepared;
@@ -86,34 +103,22 @@ async function executeAction(result, message) {
     if (task) task.status = "PENDING_APPROVAL";
     saveState(state);
     const preview = prepared.messages.slice(0, 3).map((m, i) => `--- Message ${i + 1} (${m.prospect_name}) ---\n${m.body}`).join("\n\n");
-    return {
-      executed: true,
-      status: "COMPLETE",
-      message: `Prepared ${prepared.total} outreach messages.\n\nPreview (first 3):\n\n${preview}\n\n...and ${Math.max(0, prepared.total - 3)} more.\n\nNext: Type "approve outreach" to approve all.`
-    };
+    return { executed: true, status: "COMPLETE", message: `Prepared ${prepared.total} outreach messages.\n\nPreview (first 3):\n\n${preview}\n\n...and ${Math.max(0, prepared.total - 3)} more.\n\nNext: Type "approve outreach".` };
   }
   if (result.action === "APPROVE_OUTREACH") {
     const state = loadState();
-    if (!state.outreachMessages || !state.outreachMessages.length) {
-      return { executed: false, status: "BLOCKED", message: "No outreach messages to approve. Run prepare outreach first." };
-    }
+    if (!state.outreachMessages || !state.outreachMessages.length) return { executed: false, status: "BLOCKED", message: "No outreach messages to approve. Run prepare outreach first." };
     const outreach = new OutreachLive();
     const approved = outreach.approve(state.outreachMessages);
     state.outreachMessages = approved.messages;
     const task = (state.tasks || []).find(item => item.id === "OUTREACH");
     if (task) task.status = "APPROVED";
     saveState(state);
-    return {
-      executed: true,
-      status: "COMPLETE",
-      message: `Approved ${approved.total} messages.\n\nNext: "export outreach" or "prepare proposal".`
-    };
+    return { executed: true, status: "COMPLETE", message: `Approved ${approved.total} messages.\n\nNext: "export outreach" or "prepare proposal".` };
   }
   if (result.action === "EXPORT_OUTREACH") {
     const state = loadState();
-    if (!state.outreachMessages || !state.outreachMessages.length) {
-      return { executed: false, status: "BLOCKED", message: "No outreach messages to export. Run prepare outreach first." };
-    }
+    if (!state.outreachMessages || !state.outreachMessages.length) return { executed: false, status: "BLOCKED", message: "No outreach messages to export. Run prepare outreach first." };
     const outreach = new OutreachLive({ exportDir: __dirname });
     const exported = outreach.export(state.outreachMessages);
     if (!exported.executed) return exported;
@@ -130,9 +135,7 @@ async function executeAction(result, message) {
   }
   if (result.action === "PREPARE_PROPOSAL") {
     const state = loadState();
-    if (!state.prospects || !state.prospects.length) {
-      return { executed: false, status: "BLOCKED", message: "No prospects in memory. Run prospect discovery first." };
-    }
+    if (!state.prospects || !state.prospects.length) return { executed: false, status: "BLOCKED", message: "No prospects in memory. Run prospect discovery first." };
     const proposalEngine = new ProposalLive();
     const prepared = proposalEngine.prepare(state.prospects);
     if (!prepared.executed) return prepared;
@@ -142,28 +145,18 @@ async function executeAction(result, message) {
     if (task) task.status = "PENDING_APPROVAL";
     saveState(state);
     const preview = prepared.proposals.slice(0, 2).map((p, i) => `--- Proposal ${i + 1} (${p.prospect_name}) [${p.qualification}] ---\n${p.body}`).join("\n\n");
-    return {
-      executed: true,
-      status: "COMPLETE",
-      message: `Level 3: Prepared ${prepared.total} proposals (${prepared.qualified_count} qualified).\n\nService: AI Appointment Booking Automation\n\nPreview (first 2):\n\n${preview}\n\n...and ${Math.max(0, prepared.total - 2)} more.\n\nNext: Type "approve proposal".`
-    };
+    return { executed: true, status: "COMPLETE", message: `Level 3: Prepared ${prepared.total} proposals (${prepared.qualified_count} qualified).\n\nService: AI Appointment Booking Automation\n\nPreview (first 2):\n\n${preview}\n\n...and ${Math.max(0, prepared.total - 2)} more.\n\nNext: Type "approve proposal".` };
   }
   if (result.action === "APPROVE_PROPOSAL") {
     const state = loadState();
-    if (!state.proposals || !state.proposals.length) {
-      return { executed: false, status: "BLOCKED", message: "No proposals to approve. Run prepare proposal first." };
-    }
+    if (!state.proposals || !state.proposals.length) return { executed: false, status: "BLOCKED", message: "No proposals to approve. Run prepare proposal first." };
     const proposalEngine = new ProposalLive();
     const approved = proposalEngine.approve(state.proposals);
     state.proposals = approved.proposals;
     const task = (state.tasks || []).find(item => item.id === "PROPOSAL");
     if (task) task.status = "APPROVED";
     saveState(state);
-    return {
-      executed: true,
-      status: "COMPLETE",
-      message: `Approved ${approved.total} proposals.\n\nStatus: READY TO SHARE\n\nNext Level 3/4: share proposal with prospect, then delivery planning.`
-    };
+    return { executed: true, status: "COMPLETE", message: `Approved ${approved.total} proposals.\n\nNext Level 4: Type "prepare delivery".` };
   }
   if (result.action === "SHOW_PROPOSAL") {
     const state = loadState();
@@ -171,6 +164,48 @@ async function executeAction(result, message) {
     if (!list.length) return { executed: true, status: "COMPLETE", message: "No proposals prepared yet. Type prepare proposal." };
     const summary = list.map((p, i) => `${i + 1}. [${p.status}] [${p.qualification}] ${p.prospect_name} | ${p.service_name}`).join("\n");
     return { executed: true, status: "COMPLETE", message: `Proposal list (${list.length}):\n\n${summary}` };
+  }
+  if (result.action === "PREPARE_DELIVERY") {
+    const state = loadState();
+    const engine = new DeliveryPlanLive();
+    const prepared = engine.prepare(state.proposals || []);
+    if (!prepared.executed) return prepared;
+    state.deliveryPlans = prepared.plans;
+    if (state.activeMission) state.activeMission.currentStage = "DELIVERY";
+    const task = (state.tasks || []).find(item => item.id === "DELIVERY");
+    if (task) task.status = "PENDING_EXECUTION";
+    saveState(state);
+    const preview = prepared.plans.slice(0, 3).map((p, i) => `${i + 1}. ${p.prospect_name} | steps: ${p.checklist.length} | ${p.service_name}`).join("\n");
+    return { executed: true, status: "COMPLETE", message: `Level 4: Prepared ${prepared.total} delivery plans.\n\n${preview}\n\n...and ${Math.max(0, prepared.total - 3)} more.\n\nNext: Type "run qa delivery".` };
+  }
+  if (result.action === "RUN_QA_DELIVERY") {
+    const state = loadState();
+    if (!state.deliveryPlans || !state.deliveryPlans.length) return { executed: false, status: "BLOCKED", message: "No delivery plans. Run prepare delivery first." };
+    const engine = new DeliveryPlanLive();
+    const qa = engine.runQa(state.deliveryPlans);
+    if (!qa.executed) return qa;
+    state.deliveryPlans = qa.plans;
+    saveState(state);
+    return { executed: true, status: "COMPLETE", message: qa.message };
+  }
+  if (result.action === "COMPLETE_DELIVERY") {
+    const state = loadState();
+    if (!state.deliveryPlans || !state.deliveryPlans.length) return { executed: false, status: "BLOCKED", message: "No delivery plans. Run prepare delivery first." };
+    const engine = new DeliveryPlanLive();
+    const done = engine.complete(state.deliveryPlans);
+    if (!done.executed) return done;
+    state.deliveryPlans = done.plans;
+    const task = (state.tasks || []).find(item => item.id === "DELIVERY");
+    if (task) task.status = "COMPLETE";
+    saveState(state);
+    return { executed: true, status: "COMPLETE", message: done.message };
+  }
+  if (result.action === "SHOW_DELIVERY") {
+    const state = loadState();
+    const list = state.deliveryPlans || [];
+    if (!list.length) return { executed: true, status: "COMPLETE", message: "No delivery plans yet. Type prepare delivery." };
+    const summary = list.map((p, i) => `${i + 1}. [${p.status}] QA:${p.qa_status} DEL:${p.delivery_status} ${p.prospect_name}`).join("\n");
+    return { executed: true, status: "COMPLETE", message: `Delivery list (${list.length}):\n\n${summary}` };
   }
   return { executed: false, status: "ANALYZED", message: `Command analyzed: "${message}"` };
 }
@@ -186,6 +221,6 @@ app.post("/api/dashboard/actions", async (req, res) => { try { const result = aw
 app.get("/api/status", (req, res) => { const memory = loadMemory(); const state = loadState(); res.json({ name: "MR WALI JARVIS", status: "ONLINE", version: "2.0.0", brain: "LOCAL EXECUTION ENGINE", smartMemory: "ACTIVE", rememberedMemories: memory.memories.length, activeMission: state.activeMission }); });
 app.get("/api/memory", (req, res) => res.json(loadMemory())); app.get("/api/mission", (req, res) => res.json(loadState()));
 app.post("/ask", async (req, res) => { try { const { message } = req.body; if (!message) return res.status(400).json({ success: false, error: "Message is required" }); const result = analyzeCommand(message); const classification = classifyMemory(message); const saved = remember(message, classification); if (getOperatorConsoleV4TaskCommand().isTaskCommand(message)) { const taskResult = await getOperatorConsoleV4TaskCommand().execute(message, { approval_context: req.body.approval_context || {}, input: req.body.input || null }); return res.json({ success: taskResult.success, jarvis: taskResult.message, commandType: "TASK_EXECUTION", action: "EXECUTE_TASK", actionExecuted: taskResult.success, actionStatus: taskResult.status, request_id: taskResult.request_id || null, trace: taskResult.result?.trace || null, memoryCategory: classification.category, memorySaved: saved }); } if (result.action === "ANALYZE") { const chat = await getJarvisChatV2().respond(message, { mission: loadState().activeMission, recentMemory: loadMemory().memories.slice(-5) }); return res.json({ success: true, jarvis: chat.reply, commandType: result.type, action: result.action, actionExecuted: false, actionStatus: "ANALYZED", chatMode: chat.chatMode, memoryCategory: classification.category, memorySaved: saved }); } const actionResult = await executeAction(result, message); res.json({ success: true, jarvis: actionResult.message, commandType: result.type, action: result.action, actionExecuted: actionResult.executed, actionStatus: actionResult.status, chatMode: "FALLBACK", memoryCategory: classification.category, memorySaved: saved }); } catch (error) { res.status(500).json({ success: false, error: error.message, chatMode: "FALLBACK" }); } });
-const PORT = 3000; const server = app.listen(PORT, () => { console.log(`MR WALI JARVIS ONLINE: http://localhost:${PORT}`); console.log("SMART MEMORY SYSTEM: ACTIVE"); console.log("MISSION & ACTION ENGINE: ACTIVE"); console.log("LEVEL 2 OUTREACH: READY"); console.log("LEVEL 3 PROPOSAL: READY"); });
+const PORT = 3000; const server = app.listen(PORT, () => { console.log(`MR WALI JARVIS ONLINE: http://localhost:${PORT}`); console.log("SMART MEMORY SYSTEM: ACTIVE"); console.log("MISSION & ACTION ENGINE: ACTIVE"); console.log("LEVEL 2 OUTREACH: READY"); console.log("LEVEL 3 PROPOSAL: READY"); console.log("LEVEL 4 DELIVERY: READY"); });
 module.exports = { app, server, port: PORT, close: () => server.close() };
 async function discoverProspects() { const discovery = new ProspectDiscoveryLive({ limit: 20, query: "real estate agency Dubai" }); return discovery.discover(); }
