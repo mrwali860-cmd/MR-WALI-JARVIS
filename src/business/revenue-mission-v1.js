@@ -9,6 +9,34 @@ class RevenueMissionV1 {
         this.acquisition = acquisition || new BusinessAcquisitionAgentV1();
     }
 
+    async runLive(input = {}, { liveDiscovery } = {}) {
+        const provider = liveDiscovery || require("./prospect-discovery-live");
+        const adapter = typeof provider === "function" ? new provider(input.live_discovery_options || {}) : provider;
+        if (!adapter || typeof adapter.discover !== "function") {
+            return { status: "REJECTED", request_id: input.request_id || null, reason: "LIVE_DISCOVERY_ADAPTER_REQUIRED" };
+        }
+        const live = await adapter.discover(input.live_discovery_options || {});
+        if (!live || live.status !== "COMPLETE") {
+            return { status: "BLOCKED", request_id: input.request_id || null, reason: live?.message || "LIVE_DISCOVERY_FAILED", live_discovery: live || null };
+        }
+        const providerResults = (live.prospects || []).map((prospect) => ({
+            provider: "Apify Google Maps",
+            provider_record_id: prospect.place_id || prospect.id || prospect.website || prospect.name,
+            company: prospect.name,
+            website: prospect.website || "",
+            phone: prospect.phone || "",
+            city: "Dubai",
+            country: "United Arab Emirates",
+            category: prospect.category || "Real Estate Agency"
+        }));
+        const result = this.run({
+            ...input,
+            provider_results: providerResults,
+            search_context: input.search_context || { query: live.query, source: live.source || "Apify Google Maps" }
+        });
+        return { ...result, live_discovery: { executed: true, status: live.status, mode: live.mode, query: live.query, total_found: live.total_found }, evidence: { ...result.evidence, live_discovery_executed: true, external_execution: true, outbound_sending_performed: false } };
+    }
+
     run(input = {}) {
         const requestId = String(input.request_id || "").trim();
         const targetMarket = input.target_market || "REAL_ESTATE";
