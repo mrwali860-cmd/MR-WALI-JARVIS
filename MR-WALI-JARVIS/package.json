@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:ai-demand": "node src/business/ai-demand-prospect-discovery-test.js",
+    "discover:ai-demand": "node scripts/ai-demand-prospect-discovery.js"
   },
   "keywords": [],
   "author": "",
