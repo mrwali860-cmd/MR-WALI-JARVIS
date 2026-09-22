@@ -23,9 +23,9 @@ function extractCompany(item) {
     const match = title.match(pattern);
     if (match?.[1]) return match[1].trim();
   }
-  if (text(item.sourceUrl)) {
+  const sourceUrl = item.sourceUrl || item.url || item.link || item.jobUrl || "";\n  if (text(sourceUrl)) {
     try {
-      const host = new URL(item.sourceUrl).hostname.replace(/^www\./, "");
+      const host = new URL(sourceUrl).hostname.replace(/^www\./, "");
       if (host && !/^(indeed|linkedin|wellfound|glassdoor|bayt|naukrigulf)\./i.test(host)) {
         return host.split(".")[0];
       }
