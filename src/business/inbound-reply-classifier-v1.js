@@ -1,11 +1,5 @@
 "use strict";
 
-/**
- * Inbound Reply Classifier V1
- *
- * Deterministic first-pass classification for replies received from an
- * authorized channel adapter. Unknown/ambiguous replies are routed to review.
- */
 class InboundReplyClassifierV1 {
     classify(input = {}) {
         const text = String(input.text || "").trim();
@@ -16,13 +10,13 @@ class InboundReplyClassifierV1 {
         }
 
         const normalized = text.toLowerCase();
-        const positive = /\b(yes|yeah|yep|sure|interested|sounds good|let'?s talk|book|call me|send details)\b/.test(normalized);
         const negative = /\b(no|not interested|unsubscribe|remove me|stop|do not contact)\b/.test(normalized);
+        const positive = /\b(yes|yeah|yep|sure|interested|sounds good|let'?s talk|book|call me|send details)\b/.test(normalized);
         const meeting = /\b(today|tomorrow|this week|next week|schedule|meeting|call|available|availability)\b/.test(normalized);
 
         let classification = "NEEDS_REVIEW";
         let nextAction = "HUMAN_REVIEW";
-        if (negative && !positive) {
+        if (negative) {
             classification = "NOT_INTERESTED";
             nextAction = "STOP_OUTREACH";
         } else if (positive && meeting) {
