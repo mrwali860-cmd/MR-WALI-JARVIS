@@ -93,6 +93,8 @@ class OutcomePlanExecutorV1 extends ComponentContract {
 
     async execute({ plan, step_mappings = {}, request_id, approval_context = {}, input_by_step = {} } = {}) {
         this.validatePlan(plan);
+        const requestId = String(request_id || "").trim();
+        if (!requestId) throw new Error("request_id is required");
 
         const results = [];
         for (const step of plan.steps) {
@@ -101,7 +103,7 @@ class OutcomePlanExecutorV1 extends ComponentContract {
                 plan,
                 step,
                 mapping,
-                request_id: request_id ? `${request_id}_${step.step_id}` : null,
+                request_id: `${requestId}_${step.step_id}`,
                 approval_context: approval_context[step.step_id] || approval_context[step.action] || {},
                 input: input_by_step[step.step_id] || input_by_step[step.action] || null
             });
