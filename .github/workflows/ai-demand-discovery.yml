@@ -1,0 +1,26 @@
+name: JARVIS AI Demand Discovery
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * *"
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:ai-demand
+      - run: npm run sales:pipeline
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          AI_DEMAND_MAX_RESULTS: "20"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-demand-sales-pipeline
+          path: data/ai-demand-sales-pipeline.json
