@@ -7,6 +7,7 @@ const path = require("path");
 const { AiDemandProspectDiscovery } = require("../src/business/ai-demand-prospect-discovery");
 const OutreachLive = require("../src/business/outreach-live");
 const { EmailOutreachProviderV1 } = require("../src/business/email-outreach-provider-v1");
+const { PublicContactEnrichmentV1 } = require("../src/business/public-contact-enrichment-v1");
 
 const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
@@ -28,7 +29,14 @@ async function main() {
     return;
   }
 
-  const prospects = result.prospects.map(p => ({
+  const enrichment = new PublicContactEnrichmentV1();
+  const enriched = [];
+  for (const p of result.prospects) {
+    const contact = await enrichment.enrich(p);
+    enriched.push({ ...p, email: contact.email || "", contact_enrichment: contact });
+  }
+
+  const prospects = enriched.map(p => ({
     ...p,
     email: p.email || "",
     contact: p.contact || "",
@@ -58,6 +66,8 @@ async function main() {
     send_status: "NOT_SENT",
     evidence: {
       discovery_provider: result.evidence.provider,
+      contact_enrichment: true,
+      public_contact_enrichment_only: true,
       external_email_execution: false,
       approval_required: true
     }
