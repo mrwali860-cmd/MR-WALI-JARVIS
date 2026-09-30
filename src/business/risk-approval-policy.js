@@ -22,7 +22,10 @@ class RiskApprovalPolicy extends ComponentContract {
             "BOOKING_EXECUTION",
             "EXTERNAL_MESSAGE_SEND",
             "PAYMENT_OR_MONEY_MOVEMENT",
-            "DATA_DELETION"
+            "DATA_DELETION",
+            "LISTING_PUBLISH",
+            "ORDER_FULFILLMENT",
+            "ORDER_REFUND"
         ]);
 
         this.knownActions = new Set([
@@ -36,6 +39,14 @@ class RiskApprovalPolicy extends ComponentContract {
             "CLIENT_APPROVAL",
             "DELIVERY",
             "REVENUE_RECORD",
+            "PRODUCT_RESEARCH",
+            "SUPPLIER_RESEARCH",
+            "PRODUCT_LISTING_DRAFT",
+            "INVENTORY_SYNC",
+            "ORDER_INTAKE",
+            "ORDER_STATUS_SYNC",
+            "CUSTOMER_SUPPORT_DRAFT",
+            "COMMERCE_ANALYTICS",
             ...this.approvalRequired
         ]);
     }
