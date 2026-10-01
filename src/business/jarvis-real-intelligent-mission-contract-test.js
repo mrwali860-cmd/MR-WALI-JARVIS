@@ -44,11 +44,18 @@ const JarvisAutonomousMasterAgentV1 = require("./jarvis-autonomous-master-agent-
         }
     };
 
+    const receivedInputs = [];
     const agent = new JarvisAutonomousMasterAgentV1({
         taskManager,
         serviceIntegration,
         intelligenceProvider: provider,
-        orchestrator: { executeTask: async () => ({ status: "COMPLETED", result: { ok: true } }) }
+        orchestrator: {
+            executeTask: async ({ task_id, input }) => {
+                receivedInputs.push({ task_id, input });
+                tasks.get(task_id).status = "COMPLETED";
+                return { status: "COMPLETED", result: { ok: true } };
+            }
+        }
     });
 
     const plan = await agent.createIntelligentPlan({ goal: "Discover and qualify Dubai prospects" });
@@ -60,6 +67,16 @@ const JarvisAutonomousMasterAgentV1 = require("./jarvis-autonomous-master-agent-
     assert.strictEqual(plan.intelligence.steps[1].action, "LEAD_QUALIFICATION");
     assert.deepStrictEqual(plan.intelligent_task_input.LEAD_INTAKE, { query: "real estate agency Dubai" });
     assert.deepStrictEqual(plan.intelligent_task_input.LEAD_QUALIFICATION, { required_contact: "phone_or_website" });
+
+    const report = await agent.executeGoal({
+        plan,
+        request_id: "INTELLIGENT_INPUT_MERGE_TEST",
+        task_input: { LEAD_INTAKE: { query: "real estate agency Dubai", limit: 15 } }
+    });
+
+    assert.strictEqual(report.status, "COMPLETED");
+    assert.deepStrictEqual(receivedInputs[0].input, { query: "real estate agency Dubai", limit: 15 });
+    assert.deepStrictEqual(receivedInputs[1].input, { required_contact: "phone_or_website" });
 
     console.log("REAL INTELLIGENT MISSION CONTRACT TEST: PASS");
 })();
