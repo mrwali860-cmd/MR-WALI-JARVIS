@@ -62,7 +62,7 @@ function run() {
     assert.strictEqual(result.trade_count, 2);
     assert.strictEqual(result.winning_trades, 0);
     assert.strictEqual(result.losing_trades, 1);
-    assert.strictEqual(result.win_rate_pct, 50);
+    assert.strictEqual(result.win_rate_pct, 0);
     assert.strictEqual(result.max_drawdown, 10);
     assert.strictEqual(result.trades[0].side, "BUY");
     assert.strictEqual(result.trades[0].entry_index, 5);
