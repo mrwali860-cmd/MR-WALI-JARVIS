@@ -3,15 +3,18 @@
 const ComponentContract = require("../../contracts/component-contract");
 
 /**
- * Trading Backtest V1
+ * Trading Backtest V2
  * Deterministic historical simulation only; never connects to a broker/exchange.
+ *
+ * Execution model: signal is computed from candles strictly before the
+ * execution candle; entries/exits occur at the next candle's open.
  */
 class TradingBacktestV1 extends ComponentContract {
     constructor({ tradingEngine, ...config } = {}) {
         super({
             id: "TRADING_BACKTEST_V1",
             name: "Trading Historical Backtest Engine",
-            version: "1.0.0",
+            version: "1.1.0",
             status: "AVAILABLE",
             ...config
         });
@@ -27,17 +30,31 @@ class TradingBacktestV1 extends ComponentContract {
         const qty = Number(quantity);
         if (!Number.isFinite(equity) || equity <= 0) throw new Error("INVALID_INITIAL_EQUITY");
         if (!Number.isFinite(qty) || qty <= 0) throw new Error("INVALID_QUANTITY");
+
+        let previousTimestamp = null;
         for (const candle of candles) {
-            for (const field of ["open","high","low","close"]) {
+            for (const field of ["open", "high", "low", "close"]) {
                 if (!Number.isFinite(Number(candle[field]))) throw new Error("INVALID_CANDLE");
             }
-            if (Number(candle.high) < Number(candle.low)) throw new Error("INVALID_CANDLE_RANGE");
+            const open = Number(candle.open);
+            const high = Number(candle.high);
+            const low = Number(candle.low);
+            const close = Number(candle.close);
+            if (high < low || open < low || open > high || close < low || close > high) {
+                throw new Error("INVALID_CANDLE_RANGE");
+            }
+            if (candle.timestamp !== undefined) {
+                const timestamp = String(candle.timestamp);
+                if (previousTimestamp !== null && timestamp <= previousTimestamp) {
+                    throw new Error("INVALID_CANDLE_ORDER");
+                }
+                previousTimestamp = timestamp;
+            }
         }
         return { equity, qty };
     }
 
     markEquity(cash, position, price) {
-        // Equity is realized cash plus unrealized P&L, not gross position value.
         return cash + (position ? position.quantity * (price - position.entry_price) * position.side : 0);
     }
 
@@ -63,25 +80,33 @@ class TradingBacktestV1 extends ComponentContract {
         const trades = [];
         const equity_curve = [];
 
-        for (let i = 3; i < candles.length; i += 1) {
-            const price = Number(candles[i].close);
-            const signal = this.tradingEngine.signal(candles.slice(0, i + 1));
+        // The signal for candle i may only use candles [0..i-1].
+        // Execution happens at candle i open, eliminating same-close lookahead.
+        for (let i = 4; i < candles.length; i += 1) {
+            const signal = this.tradingEngine.signal(candles.slice(0, i));
             const desiredSide = signal.side === "BUY" ? 1 : signal.side === "SELL" ? -1 : 0;
+            const executionPrice = Number(candles[i].open);
 
             if (position && desiredSide !== position.side) {
-                const trade = this.closePosition(position, price, i, "SIGNAL_CHANGE");
+                const trade = this.closePosition(position, executionPrice, i, "SIGNAL_CHANGE");
                 cash += trade.pnl;
                 trades.push(trade);
                 position = null;
             }
             if (!position && desiredSide !== 0) {
-                position = { side: desiredSide, quantity: qty, entry_price: price, entry_index: i };
+                position = {
+                    side: desiredSide,
+                    quantity: qty,
+                    entry_price: executionPrice,
+                    entry_index: i
+                };
             }
 
+            const markPrice = Number(candles[i].close);
             equity_curve.push({
                 index: i,
-                price,
-                equity: Number(this.markEquity(cash, position, price).toFixed(8))
+                price: markPrice,
+                equity: Number(this.markEquity(cash, position, markPrice).toFixed(8))
             });
         }
 
@@ -95,18 +120,20 @@ class TradingBacktestV1 extends ComponentContract {
         const finalEquity = cash;
         const wins = trades.filter(t => t.pnl > 0).length;
         const losses = trades.filter(t => t.pnl < 0).length;
-        const grossProfit = trades.filter(t => t.pnl > 0).reduce((sum,t) => sum+t.pnl, 0);
-        const grossLoss = trades.filter(t => t.pnl < 0).reduce((sum,t) => sum+t.pnl, 0);
+        const grossProfit = trades.filter(t => t.pnl > 0).reduce((sum, t) => sum + t.pnl, 0);
+        const grossLoss = trades.filter(t => t.pnl < 0).reduce((sum, t) => sum + t.pnl, 0);
+
         let peak = startingEquity;
         let maxDrawdown = 0;
         for (const point of equity_curve) {
             peak = Math.max(peak, point.equity);
             maxDrawdown = Math.max(maxDrawdown, peak - point.equity);
         }
-        if (!equity_curve.length || equity_curve[equity_curve.length-1].equity !== finalEquity) {
+
+        if (!equity_curve.length || equity_curve[equity_curve.length - 1].equity !== finalEquity) {
             equity_curve.push({
                 index: candles.length - 1,
-                price: Number(candles[candles.length-1].close),
+                price: Number(candles[candles.length - 1].close),
                 equity: Number(finalEquity.toFixed(8))
             });
         }
@@ -115,14 +142,15 @@ class TradingBacktestV1 extends ComponentContract {
             status: "BACKTEST_COMPLETED",
             simulated: true,
             strategy: "MA_CROSSOVER_BASELINE",
+            execution_model: "NEXT_CANDLE_OPEN",
             initial_equity: startingEquity,
             final_equity: Number(finalEquity.toFixed(8)),
-            total_pnl: Number((finalEquity-startingEquity).toFixed(8)),
-            return_pct: Number((((finalEquity/startingEquity)-1)*100).toFixed(8)),
+            total_pnl: Number((finalEquity - startingEquity).toFixed(8)),
+            return_pct: Number((((finalEquity / startingEquity) - 1) * 100).toFixed(8)),
             trade_count: trades.length,
             winning_trades: wins,
             losing_trades: losses,
-            win_rate_pct: trades.length ? Number(((wins/trades.length)*100).toFixed(8)) : 0,
+            win_rate_pct: trades.length ? Number(((wins / trades.length) * 100).toFixed(8)) : 0,
             gross_profit: Number(grossProfit.toFixed(8)),
             gross_loss: Number(grossLoss.toFixed(8)),
             max_drawdown: Number(maxDrawdown.toFixed(8)),
