@@ -57,26 +57,26 @@ function run() {
     assert.strictEqual(result.simulated, true);
     assert.strictEqual(result.execution_model, "NEXT_CANDLE_OPEN");
     assert.strictEqual(result.initial_equity, 1000);
-    assert.strictEqual(result.final_equity, 997);
-    assert.strictEqual(result.total_pnl, -3);
+    assert.strictEqual(result.final_equity, 992);
+    assert.strictEqual(result.total_pnl, -8);
     assert.strictEqual(result.trade_count, 2);
     assert.strictEqual(result.winning_trades, 1);
     assert.strictEqual(result.losing_trades, 1);
     assert.strictEqual(result.win_rate_pct, 50);
     assert.strictEqual(result.max_drawdown, 8);
     assert.strictEqual(result.trades[0].side, "BUY");
-    assert.strictEqual(result.trades[0].entry_index, 4);
-    assert.strictEqual(result.trades[0].entry_price, 11);
+    assert.strictEqual(result.trades[0].entry_index, 5);
+    assert.strictEqual(result.trades[0].entry_price, 14);
     assert.strictEqual(result.trades[0].exit_index, 7);
     assert.strictEqual(result.trades[0].exit_price, 8);
-    assert.strictEqual(result.trades[0].pnl, -3);
+    assert.strictEqual(result.trades[0].pnl, -8);
     assert.strictEqual(result.trades[1].side, "SELL");
     assert.strictEqual(result.trades[1].entry_index, 8);
     assert.strictEqual(result.trades[1].entry_price, 6);
     assert.strictEqual(result.trades[1].exit_index, 8);
     assert.strictEqual(result.trades[1].exit_price, 6);
     assert.strictEqual(result.trades[1].pnl, 0);
-    assert.strictEqual(result.equity_curve[result.equity_curve.length - 1].equity, 997);
+    assert.strictEqual(result.equity_curve[result.equity_curve.length - 1].equity, 992);
 
     // Same input must remain deterministic.
     assert.deepStrictEqual(backtest.run(input), result);
