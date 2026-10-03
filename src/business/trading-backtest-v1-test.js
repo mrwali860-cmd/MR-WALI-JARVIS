@@ -23,12 +23,21 @@ function run() {
 
     assert.throws(() => backtest.run({ candles: candles([10, 11, 12, 13]) }), /CANDLES_MINIMUM_5_REQUIRED/);
     assert.throws(() => backtest.run({
-        candles: [            ...candles([10, 11, 12, 13, 14]),            { timestamp: "2026-01-06", open: 20, high: 15, low: 10, close: 14 }        ],
+        candles: [
+            { timestamp: "2026-01-01", open: 10, high: 11, low: 9, close: 10 },
+            { timestamp: "2026-01-02", open: 10, high: 11, low: 9, close: 10 },
+            { timestamp: "2026-01-03", open: 10, high: 11, low: 9, close: 10 },
+            { timestamp: "2026-01-04", open: 10, high: 11, low: 9, close: 10 },
+            { timestamp: "2026-01-05", open: 20, high: 15, low: 10, close: 14 }
+        ]
     }), /INVALID_CANDLE_RANGE/);
     assert.throws(() => backtest.run({
         candles: [
-            ...candles([10, 11, 12, 13, 14]),
-            { timestamp: "2026-01-05", open: 14, high: 15, low: 13, close: 14 }
+            { timestamp: "2026-01-01", open: 10, high: 11, low: 9, close: 10 },
+            { timestamp: "2026-01-02", open: 10, high: 11, low: 9, close: 10 },
+            { timestamp: "2026-01-03", open: 10, high: 11, low: 9, close: 10 },
+            { timestamp: "2026-01-04", open: 10, high: 11, low: 9, close: 10 },
+            { timestamp: "2026-01-03", open: 10, high: 11, low: 9, close: 10 }
         ]
     }), /INVALID_CANDLE_ORDER/);
 
