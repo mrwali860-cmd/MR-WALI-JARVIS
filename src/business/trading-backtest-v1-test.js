@@ -41,8 +41,8 @@ function run() {
         ]
     }), /INVALID_CANDLE_ORDER/);
 
-    // Signal at i=4 can only see indexes 0..3; BUY is therefore executed
-    // at candle 4 OPEN, not candle 4 CLOSE.
+    // The first BUY signal occurs when history has 5 candles; execution therefore
+    // happens at candle 5 OPEN, never at the signal candle CLOSE.
     const input = {
         candles: candles(
             [10, 10, 10, 10, 12, 14, 16, 8, 6],
@@ -60,10 +60,10 @@ function run() {
     assert.strictEqual(result.final_equity, 992);
     assert.strictEqual(result.total_pnl, -8);
     assert.strictEqual(result.trade_count, 2);
-    assert.strictEqual(result.winning_trades, 1);
+    assert.strictEqual(result.winning_trades, 0);
     assert.strictEqual(result.losing_trades, 1);
     assert.strictEqual(result.win_rate_pct, 50);
-    assert.strictEqual(result.max_drawdown, 8);
+    assert.strictEqual(result.max_drawdown, 10);
     assert.strictEqual(result.trades[0].side, "BUY");
     assert.strictEqual(result.trades[0].entry_index, 5);
     assert.strictEqual(result.trades[0].entry_price, 14);
