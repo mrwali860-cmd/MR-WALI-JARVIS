@@ -37,7 +37,8 @@ class TradingBacktestV1 extends ComponentContract {
     }
 
     markEquity(cash, position, price) {
-        return cash + (position ? position.quantity * price * position.side : 0);
+        // Equity is realized cash plus unrealized P&L, not gross position value.
+        return cash + (position ? position.quantity * (price - position.entry_price) * position.side : 0);
     }
 
     closePosition(position, price, index, reason) {
