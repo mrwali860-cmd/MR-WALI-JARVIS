@@ -18,6 +18,6 @@
     "sales:pipeline": "node ./scripts/run-sales-pipeline.js",
     "sales:send-approved": "node ./scripts/send-approved-outreach.js",
     "test:ai-demand-main-sync": "node ./src/business/ai-demand-pipeline-main-sync-test.js",
-    "test:ecommerce": "node src/business/ecommerce-operations-adapter-v1-test.js && node src/business/ecommerce-service-contract-test.js"
+    "test:ecommerce": "node src/business/ecommerce-operations-adapter-v1-test.js && node src/business/ecommerce-service-contract-test.js && node src/business/ecommerce-orchestrator-integration-test.js"
   }
 }
