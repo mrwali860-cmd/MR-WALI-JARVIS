@@ -67,8 +67,8 @@ function run() {
     assert.strictEqual(result.trades[0].side, "BUY");
     assert.strictEqual(result.trades[0].entry_index, 5);
     assert.strictEqual(result.trades[0].entry_price, 14);
-    assert.strictEqual(result.trades[0].exit_index, 7);
-    assert.strictEqual(result.trades[0].exit_price, 8);
+    assert.strictEqual(result.trades[0].exit_index, 8);
+    assert.strictEqual(result.trades[0].exit_price, 6);
     assert.strictEqual(result.trades[0].pnl, -8);
     assert.strictEqual(result.trades[1].side, "SELL");
     assert.strictEqual(result.trades[1].entry_index, 8);
