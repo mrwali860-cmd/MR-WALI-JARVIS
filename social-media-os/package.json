@@ -1,0 +1,13 @@
+{
+  "name": "social-media-os-foundation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Isolated, draft-first foundation for a revenue-aware social media operating system",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
