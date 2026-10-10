@@ -58,7 +58,7 @@ function evaluateDraft(draft) {
     { id: 'has-caption', pass: typeof draft.caption === 'string' && draft.caption.trim().length >= 20, message: 'Caption must be at least 20 characters.' },
     { id: 'has-script', pass: typeof draft.script === 'string' && draft.script.trim().length >= 40, message: 'Script must be at least 40 characters.' },
     { id: 'has-audience', pass: typeof draft.audience === 'string' && draft.audience.trim().length > 0, message: 'Target audience is required.' },
-    { id: 'approval-gate', pass: draft.approvalRequired === true && draft.status !== 'approved', message: 'A draft must remain behind an explicit approval gate.' },
+    { id: 'approval-gate', pass: draft.approvalRequired === true, message: 'Explicit approval must remain enabled for all content.' },
     { id: 'not-published', pass: draft.published !== true, message: 'This foundation cannot publish externally.' }
   ];
   const failures = checks.filter(check => !check.pass);
