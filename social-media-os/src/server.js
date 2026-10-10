@@ -6,7 +6,7 @@ const { createContentDraft, approveDraft } = require('./content-engine');
 const { appendDraft, readDrafts } = require('./draft-store');
 
 const PORT = Number(process.env.SOCIAL_MEDIA_OS_PORT || 4177);
-const STORE_PATH = path.join(__dirname, '..', 'data', 'drafts.jsonl');
+const STORE_PATH = process.env.SOCIAL_MEDIA_OS_STORE_PATH || path.join(__dirname, '..', 'data', 'drafts.jsonl');
 const MAX_BODY_BYTES = 32 * 1024;
 
 function sendJson(res, status, data) {
