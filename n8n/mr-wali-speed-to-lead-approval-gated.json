@@ -29,6 +29,12 @@
               "type": "string"
             },
             {
+              "id": "email",
+              "name": "email",
+              "value": "={{ $json.body.lead.email }}",
+              "type": "string"
+            },
+            {
               "id": "phone",
               "name": "phone",
               "value": "={{ $json.body.lead.phone }}",
@@ -112,6 +118,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "name": "={{ $json.name }}",
+            "email": "={{ $json.email }}",
             "phone": "={{ $json.phone }}",
             "industry": "={{ $json.industry }}",
             "original_message": "={{ $json.original_message }}",
