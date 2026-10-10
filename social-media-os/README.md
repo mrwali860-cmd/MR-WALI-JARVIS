@@ -27,6 +27,18 @@ From this folder:
 npm test
 ```
 
+## Try the local draft workflow
+
+From this folder, with Node.js 18+ installed:
+
+```powershell
+npm test
+node src/cli.js --brand "Sample Brand" --audience "small business owners" --topic "Practical AI workflows" --language English --platform youtube-shorts --goal leads
+node src/cli.js --list
+```
+
+Drafts are appended to `data/drafts.jsonl` under this folder. This is local file storage, not a shared database or backup. The CLI generates structured template-based drafts; it does not call an AI model.
+
 ## Current scope
 
 Supported platform labels: YouTube, YouTube Shorts, Facebook, Instagram, TikTok, LinkedIn, and X. A platform label is not evidence that its API is connected. API publishing, media rendering, trend research, and analytics ingestion are not implemented in this foundation yet.
