@@ -1,5 +1,5 @@
 {
-  "name": "MR WALI JARVIS - Speed-to-Lead (Approval Gated)",
+  "name": "MR WALI JARVIS - Speed-to-Lead (Draft Logging Only)",
   "nodes": [
     {
       "parameters": {
@@ -152,32 +152,9 @@
       }
     },
     {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "approval-check",
-              "leftValue": "={{ $json.approved_for_sending }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
+      "parameters": {},
       "id": "approval-gate",
-      "name": "Approved by Human?",
+      "name": "Approval Status (No Auto-Send)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
@@ -187,48 +164,8 @@
     },
     {
       "parameters": {
-        "sendTo": "={{ $json.email }}",
-        "subject": "={{ 'Re: Your property enquiry' }}",
-        "emailType": "text",
-        "message": "={{ $json.reply_draft }}",
-        "options": {}
-      },
-      "id": "email-send",
-      "name": "Send Approved Email",
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.1,
-      "position": [
-        1020,
-        140
-      ],
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "REPLACE_WITH_CREDENTIAL_ID",
-          "name": "Gmail account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { success: true, logged: true, message_sent: true, channel: 'email' } }}",
-        "options": {
-          "responseCode": 200
-        }
-      },
-      "id": "respond-sent",
-      "name": "Respond - Approved Email Sent",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        1270,
-        140
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ { success: true, logged: true, message_sent: false, status: 'DRAFT_ONLY', note: 'Lead logged; a human must approve before sending.' } }}",
+        "responseBody": "={{ { success: true, logged: true, message_sent: false, status: 'DRAFT_ONLY', note: 'Lead logged. This workflow never sends email; configure a separate authenticated human-approval workflow before delivery.' } }}",
         "options": {
           "responseCode": 200
         }
@@ -270,36 +207,7 @@
       "main": [
         [
           {
-            "node": "Approved by Human?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Approved by Human?": {
-      "main": [
-        [
-          {
-            "node": "Send Approved Email",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
             "node": "Respond - Draft Saved Only",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Approved Email": {
-      "main": [
-        [
-          {
-            "node": "Respond - Approved Email Sent",
             "type": "main",
             "index": 0
           }
