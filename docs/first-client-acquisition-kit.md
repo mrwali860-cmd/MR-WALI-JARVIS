@@ -34,7 +34,7 @@ Hi {{FirstName}} — I’m working on a practical speed-to-lead workflow for pro
 “I'll enter a sample enquiry, industry, and contact details. This dashboard sends the form to the backend without refreshing the page. The backend validates the input and asks the AI to return a structured intent, HOT/WARM/COLD label, and response draft.”
 
 **1:05–1:45 — Show the result and safety boundary**
-“Here is the draft and priority label. This is a draft—not proof that a customer message was sent. The workflow can log it to Google Sheets and wait for an authorized human approval before sending.”
+“Here is the draft and priority label. This is a draft—not proof that a customer message was sent. The current n8n blueprint logs drafts only. It does not send email; delivery requires a separately implemented and authenticated human-approval step.”
 
 **1:45–2:20 — Show the record**
 “We can inspect the lead record, draft, score, and delivery status. For a pilot, we will agree which source and channel to connect and how failed deliveries are flagged.”
