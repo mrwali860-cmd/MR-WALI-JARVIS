@@ -95,3 +95,53 @@ test('returns an empty list when no local draft store exists', async () => {
   assert.deepEqual(await readDrafts(path.join(tempDir, 'missing.jsonl')), []);
   await fs.rm(tempDir, { recursive: true, force: true });
 });
+
+const fsSync = require('node:fs');
+const testStoreDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'social-media-os-server-'));
+process.env.SOCIAL_MEDIA_OS_STORE_PATH = path.join(testStoreDir, 'drafts.jsonl');
+const { createServer } = require('../src/server');
+
+test('local dashboard API creates, lists, and reviews drafts without publishing', async () => {
+  const server = createServer();
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address();
+  const base = 'http://127.0.0.1:' + address.port;
+  try {
+    const health = await fetch(base + '/api/health');
+    assert.equal(health.status, 200);
+    assert.equal((await health.json()).publishingEnabled, false);
+
+    const createdResponse = await fetch(base + '/api/drafts', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input)
+    });
+    assert.equal(createdResponse.status, 201);
+    const created = (await createdResponse.json()).draft;
+    assert.equal(created.published, false);
+
+    const approvedResponse = await fetch(base + '/api/drafts/' + encodeURIComponent(created.id) + '/approval', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ decision: 'approve', reviewer: 'test-owner' })
+    });
+    assert.equal(approvedResponse.status, 200);
+    assert.equal((await approvedResponse.json()).draft.status, 'approved');
+
+    const listed = await (await fetch(base + '/api/drafts')).json();
+    assert.equal(listed.count, 1);
+    assert.equal(listed.drafts[0].status, 'approved');
+    assert.equal(listed.drafts[0].published, false);
+
+    const duplicateReview = await fetch(base + '/api/drafts/' + encodeURIComponent(created.id) + '/approval', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ decision: 'reject', reviewer: 'test-owner' })
+    });
+    assert.equal(duplicateReview.status, 409);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+    fsSync.rmSync(testStoreDir, { recursive: true, force: true });
+    delete process.env.SOCIAL_MEDIA_OS_STORE_PATH;
+  }
+});
