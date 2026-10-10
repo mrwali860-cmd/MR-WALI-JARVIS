@@ -69,3 +69,29 @@ test('rejects negative or invalid financial metrics', () => {
   assert.throws(() => calculateMetrics({ revenue: -1 }), /revenue must be a finite non-negative number/);
   assert.throws(() => calculateMetrics({ costs: NaN }), /costs must be a finite non-negative number/);
 });
+
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const { appendDraft, readDrafts } = require('../src/draft-store');
+
+test('stores drafts locally and reads them back without changing the source object', async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'social-media-os-'));
+  const filePath = path.join(tempDir, 'drafts.jsonl');
+  const draft = createContentDraft(input);
+  const result = await appendDraft(filePath, draft);
+  assert.equal(result.saved, true);
+  const records = await readDrafts(filePath);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].id, draft.id);
+  assert.equal(records[0].published, false);
+  await appendDraft(filePath, { ...draft, id: 'second-record' });
+  assert.equal((await readDrafts(filePath)).length, 2);
+  await fs.rm(tempDir, { recursive: true, force: true });
+});
+
+test('returns an empty list when no local draft store exists', async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'social-media-os-empty-'));
+  assert.deepEqual(await readDrafts(path.join(tempDir, 'missing.jsonl')), []);
+  await fs.rm(tempDir, { recursive: true, force: true });
+});
