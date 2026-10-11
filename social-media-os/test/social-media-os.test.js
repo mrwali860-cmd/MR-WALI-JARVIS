@@ -319,7 +319,9 @@ test('local dashboard API creates, lists, and reviews drafts without publishing'
   try {
     const health = await fetch(base + '/api/health');
     assert.equal(health.status, 200);
-    assert.equal((await health.json()).publishingEnabled, false);
+    const healthData = await health.json();
+    assert.equal(healthData.publishingEnabled, false);
+    assert.equal(typeof healthData.integrations.tavilyConfigured, 'boolean');
 
     const createdResponse = await fetch(base + '/api/drafts', {
       method: 'POST', headers: { 'content-type': 'application/json' },
