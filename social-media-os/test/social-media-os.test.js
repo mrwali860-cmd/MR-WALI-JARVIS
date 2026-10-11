@@ -353,3 +353,31 @@ test('local dashboard API creates, lists, and reviews drafts without publishing'
     delete process.env.SOCIAL_MEDIA_OS_RESEARCH_STORE_PATH;
   }
 });
+
+const { buildProductionBrief } = require('../src/production-agent');
+
+test('production agent builds a reviewable scene and asset brief without rendering media', () => {
+  const draft = createContentDraft({
+    brand: 'Sample Brand',
+    audience: 'small business owners',
+    topic: 'Practical AI workflows',
+    language: 'English',
+    platform: 'youtube-shorts',
+    goal: 'leads'
+  });
+  const brief = buildProductionBrief(draft);
+  assert.equal(brief.status, 'production_brief_draft');
+  assert.equal(brief.format, 'vertical-short');
+  assert.equal(brief.aspectRatio, '9:16');
+  assert.ok(brief.scenes.length >= 2);
+  assert.ok(brief.estimatedDurationSeconds > 0);
+  assert.equal(brief.requiresHumanReview, true);
+  assert.equal(brief.mediaRendered, false);
+  assert.equal(brief.uploaded, false);
+  assert.ok(brief.assetChecklist.includes('readable subtitles'));
+});
+
+test('production agent rejects missing scripts and unsupported output formats', () => {
+  assert.throws(() => buildProductionBrief({ title: 'Title', platform: 'youtube', language: 'English', script: '' }), /draft.script/);
+  assert.throws(() => buildProductionBrief({ title: 'Title', platform: 'youtube', language: 'English', script: 'A long enough script to describe a scene.' }, { format: 'cinema' }), /format must be/);
+});
