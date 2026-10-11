@@ -334,8 +334,9 @@ test('local dashboard API creates, lists, and reviews drafts without publishing'
       body: JSON.stringify({ format: 'vertical-short' })
     });
     assert.equal(productionResponse.status, 200);
-    const production = (await productionResponse.json()).brief;
-    assert.equal(production.sourceDraftId, undefined);
+    const productionPayload = await productionResponse.json();
+    assert.equal(productionPayload.sourceDraftId, created.id);
+    const production = productionPayload.brief;
     assert.equal(production.requiresHumanReview, true);
     assert.equal(production.mediaRendered, false);
     assert.equal(production.uploaded, false);
