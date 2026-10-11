@@ -15,8 +15,6 @@ async function searchWeb(query, options = {}) {
   if (/[^\x21-\x7E]/.test(apiKey)) {
     throw new TypeError('TAVILY_API_KEY contains non-ASCII characters; copy the key again');
   }
-    throw new TypeError('TAVILY_API_KEY contains whitespace or non-ASCII characters; copy the key again');
-  }
   const maxResults = options.maxResults ?? 5;
   if (!Number.isInteger(maxResults) || maxResults < 1 || maxResults > 10) {
     throw new RangeError('maxResults must be an integer from 1 to 10');
