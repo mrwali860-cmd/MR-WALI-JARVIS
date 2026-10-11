@@ -83,6 +83,7 @@ test('web search adapter rejects missing keys, insecure endpoints, and failed pr
   await assert.rejects(searchWeb('AI', { apiKey: '', fetchImpl: async () => ({ ok: true, json: async () => ({ results: [] }) }) }), /TAVILY_API_KEY/);
   await assert.rejects(searchWeb('AI', { apiKey: 'fake', endpoint: 'http://example.com/search', fetchImpl: async () => ({ ok: true, json: async () => ({ results: [] }) }) }), /HTTPS/);
   await assert.rejects(searchWeb('AI', { apiKey: 'fake', fetchImpl: async () => ({ ok: false, status: 401 }) }), /HTTP 401/);
+  await assert.rejects(searchWeb('AI', { apiKey: 'fake', endpoint: 'https://attacker.example/search', fetchImpl: async () => ({ ok: true, json: async () => ({ results: [] }) }) }), /official Tavily/);
   await assert.rejects(searchWeb('AI', { apiKey: 'fake', maxResults: 99, fetchImpl: async () => ({ ok: true, json: async () => ({ results: [] }) }) }), /maxResults/);
 });
 
