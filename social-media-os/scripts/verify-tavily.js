@@ -24,8 +24,17 @@ async function main() {
 
     if (result.results.length === 0) process.exitCode = 2;
   } catch (error) {
-    // The provider adapter deliberately emits sanitized errors without request headers or secrets.
-    process.stderr.write('LIVE_SEARCH_FAILED: ' + String(error && error.message || 'Unknown error') + '\n');
+    // Print only sanitized error metadata; never print request headers or credentials.
+    const message = String(error && error.message || 'Unknown error');
+    const code = error && error.cause && typeof error.cause.code === 'string'
+      ? error.cause.code
+      : null;
+    const causeMessage = error && error.cause && typeof error.cause.message === 'string'
+      ? error.cause.message.replace(/tvly-[A-Za-z0-9_-]+/g, '[REDACTED]').slice(0, 180)
+      : null;
+    process.stderr.write('LIVE_SEARCH_FAILED: ' + message +
+      (code ? ' | CODE: ' + code : '') +
+      (causeMessage ? ' | CAUSE: ' + causeMessage : '') + '\\n');
     process.exitCode = 1;
   }
 }
