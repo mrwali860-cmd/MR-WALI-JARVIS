@@ -7,7 +7,7 @@ async function main() {
     'AI tools that save time for small businesses in 2026';
 
   try {
-    const result = await searchWeb(query, { maxResults: 5 });
+    const result = await searchWeb(query, { maxResults: 5, timeoutMs: 30000 });
     const domains = [...new Set(result.results.map(item => {
       try { return new URL(item.url).hostname; } catch { return null; }
     }).filter(Boolean))];
