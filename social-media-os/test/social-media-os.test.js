@@ -329,6 +329,18 @@ test('local dashboard API creates, lists, and reviews drafts without publishing'
     const created = (await createdResponse.json()).draft;
     assert.equal(created.published, false);
 
+    const productionResponse = await fetch(base + '/api/drafts/' + encodeURIComponent(created.id) + '/production-brief', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ format: 'vertical-short' })
+    });
+    assert.equal(productionResponse.status, 200);
+    const production = (await productionResponse.json()).brief;
+    assert.equal(production.sourceDraftId, undefined);
+    assert.equal(production.requiresHumanReview, true);
+    assert.equal(production.mediaRendered, false);
+    assert.equal(production.uploaded, false);
+    assert.ok(production.scenes.length >= 2);
+
     const approvedResponse = await fetch(base + '/api/drafts/' + encodeURIComponent(created.id) + '/approval', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ decision: 'approve', reviewer: 'test-owner' })
