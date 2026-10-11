@@ -4,6 +4,7 @@ const http = require('node:http');
 const path = require('node:path');
 const { createContentDraft, approveDraft } = require('./content-engine');
 const { appendDraft, readDrafts } = require('./draft-store');
+const { searchWeb } = require('./research-web-provider');
 
 const PORT = Number(process.env.SOCIAL_MEDIA_OS_PORT || 4177);
 const STORE_PATH = process.env.SOCIAL_MEDIA_OS_STORE_PATH || path.join(__dirname, '..', 'data', 'drafts.jsonl');
@@ -45,16 +46,19 @@ const HTML = `<!doctype html>
 <label for="platform">Platform</label><select id="platform" name="platform"><option value="youtube-shorts">YouTube Shorts</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option><option value="tiktok">TikTok</option><option value="linkedin">LinkedIn</option><option value="x">X</option></select>
 <label for="goal">Primary goal</label><select id="goal" name="goal"><option value="leads">Leads</option><option value="clients">Clients</option><option value="sales">Sales</option><option value="revenue">Revenue</option><option value="views">Views</option><option value="followers">Followers</option></select>
 <button type="submit">Generate and save draft</button></form><div id="message" class="status" role="status"></div><p class="notice">This first version uses a deterministic template, not an AI model. Saved drafts stay in this local folder. Publishing, account connections, media rendering and analytics are not connected.</p></section>
-<section class="panel"><h2>Draft library</h2><div id="drafts" class="empty">Loading drafts…</div></section></main>
+<section class="panel"><h2>Draft library</h2><div id="drafts" class="empty">Loading drafts…</div></section>
+<section class="panel"><h2>Research Agent</h2><form id="research-form"><label for="research-query">Research topic or audience question</label><textarea id="research-query" name="query" rows="2" required placeholder="e.g. AI tools that save time for small businesses"></textarea><label for="research-limit">Maximum sources</label><select id="research-limit" name="maxResults"><option value="3">3 sources</option><option value="5" selected>5 sources</option><option value="10">10 sources</option></select><button type="submit">Search the web</button></form><div id="research-message" class="status" role="status"></div><div id="research-results"></div><p class="notice">Search results are research leads, not verified facts. Check original sources before publishing. Requires TAVILY_API_KEY in the local server environment.</p></section></main>
 <script>
 const form=document.getElementById('draft-form'),message=document.getElementById('message'),list=document.getElementById('drafts');
+const researchForm=document.getElementById('research-form'),researchMessage=document.getElementById('research-message'),researchResults=document.getElementById('research-results');
 function el(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node}
 async function refresh(){try{const r=await fetch('/api/drafts');const data=await r.json();list.replaceChildren();if(!data.drafts.length){list.append(el('p','No drafts yet. Create the first one.','empty'));return}for(const d of [...data.drafts].reverse()){const card=el('article',undefined,'draft');card.append(el('h3',d.title));card.append(el('div',d.platform+' · '+d.language+' · Goal: '+d.goal,'meta'));const tag=el('span',d.status,'tag');card.append(tag);card.append(el('pre',d.script));card.append(el('div','Quality: '+d.quality.score+'% · '+(d.quality.passed?'checks passed':'review required'),'meta'));if(d.status==='draft'){const row=el('div');const approve=el('button','Approve');approve.type='button';approve.onclick=()=>review(d.id,'approve');const reject=el('button','Reject','secondary');reject.type='button';reject.onclick=()=>review(d.id,'reject');row.append(approve,reject);card.append(row)}list.append(card)}}catch(e){list.textContent='Could not load drafts. Check that the local server is running.'}}
 async function review(id,decision){const reviewer=window.prompt('Reviewer identifier (for audit record):');if(!reviewer||!reviewer.trim())return;const r=await fetch('/api/drafts/'+encodeURIComponent(id)+'/approval',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({decision,reviewer})});const data=await r.json();message.textContent=r.ok?'Review recorded: '+data.draft.status:(data.error||'Review failed');await refresh()}
+researchForm.addEventListener('submit',async event=>{event.preventDefault();researchMessage.textContent='Searching…';researchResults.replaceChildren();const body=Object.fromEntries(new FormData(researchForm).entries());body.maxResults=Number(body.maxResults);try{const r=await fetch('/api/research/search',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const data=await r.json();if(!r.ok)throw new Error(data.error||'Research search failed');researchMessage.textContent='Found '+data.results.length+' source leads. Verify each source before using claims.';for(const source of data.results){const card=el('article',undefined,'draft');const title=el('h3',source.title);const link=el('a',source.url);link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';const notes=el('p',source.notes);card.append(title,link,notes,el('div','Relevance score: '+(source.score===null?'not provided':source.score),'meta'));researchResults.append(card)}}catch(e){researchMessage.textContent=e.message}});
 form.addEventListener('submit',async event=>{event.preventDefault();message.textContent='Creating draft…';const body=Object.fromEntries(new FormData(form).entries());try{const r=await fetch('/api/drafts',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const data=await r.json();if(!r.ok)throw new Error(data.error||'Could not create draft');message.textContent='Draft saved. Quality score: '+data.draft.quality.score+'%';form.elements.topic.value='';await refresh()}catch(e){message.textContent=e.message}});refresh();
 </script></body></html>`;
 
-async function handler(req, res) {
+async function handler(req, res, dependencies = {}) {
   const url = new URL(req.url, 'http://127.0.0.1');
   if (req.method === 'GET' && url.pathname === '/') {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
@@ -63,6 +67,12 @@ async function handler(req, res) {
   }
   if (req.method === 'GET' && url.pathname === '/api/health') {
     sendJson(res, 200, { ok: true, service: 'social-media-os', mode: 'local-draft-only', publishingEnabled: false });
+    return;
+  }
+  if (req.method === 'POST' && url.pathname === '/api/research/search') {
+    const body = await readJsonBody(req);
+    const results = await (dependencies.researchSearch || searchWeb)(body.query, { maxResults: body.maxResults });
+    sendJson(res, 200, results);
     return;
   }
   if (req.method === 'GET' && url.pathname === '/api/drafts') {
@@ -93,9 +103,9 @@ async function handler(req, res) {
   sendJson(res, 404, { error: 'Route not found' });
 }
 
-function createServer() {
+function createServer(dependencies = {}) {
   return http.createServer((req, res) => {
-    handler(req, res).catch(error => {
+    handler(req, res, dependencies).catch(error => {
       if (res.headersSent || res.destroyed) return;
       const status = error.statusCode || (error instanceof TypeError || error instanceof RangeError ? 400 : 500);
       sendJson(res, status, { error: status === 500 ? 'Internal server error' : error.message });
