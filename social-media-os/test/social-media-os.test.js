@@ -192,6 +192,40 @@ const testStoreDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'social-media-os-
 process.env.SOCIAL_MEDIA_OS_STORE_PATH = path.join(testStoreDir, 'drafts.jsonl');
 const { createServer } = require('../src/server');
 
+test('dashboard research API returns normalized search results', async () => {
+  const server = createServer({
+    researchSearch: async (query, options) => ({
+      query,
+      provider: 'test',
+      results: [{ title: 'Verified later', url: 'https://example.com/research', notes: 'Source snippet', score: 0.7 }],
+      receivedMaxResults: options.maxResults
+    })
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const base = 'http://127.0.0.1:' + server.address().port;
+  try {
+    const response = await fetch(base + '/api/research/search', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query: 'AI for small business', maxResults: 3 })
+    });
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.equal(data.query, 'AI for small business');
+    assert.equal(data.results[0].url, 'https://example.com/research');
+    assert.equal(data.receivedMaxResults, 3);
+    const invalid = await fetch(base + '/api/research/search', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query: '', maxResults: 3 })
+    });
+    assert.equal(invalid.status, 400);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
 test('local dashboard API creates, lists, and reviews drafts without publishing', async () => {
   const server = createServer();
   await new Promise((resolve, reject) => {
