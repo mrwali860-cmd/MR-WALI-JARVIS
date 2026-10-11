@@ -75,7 +75,7 @@ async function handler(req, res, dependencies = {}) {
     return;
   }
   if (req.method === 'GET' && url.pathname === '/api/health') {
-    sendJson(res, 200, { ok: true, service: 'social-media-os', mode: 'local-draft-only', publishingEnabled: false });
+    sendJson(res, 200, { ok: true, service: 'social-media-os', mode: 'local-draft-only', publishingEnabled: false, integrations: { tavilyConfigured: Boolean(process.env.TAVILY_API_KEY) } });
     return;
   }
   if (req.method === 'POST' && url.pathname === '/api/research/search') {
