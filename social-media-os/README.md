@@ -8,8 +8,9 @@ This folder is a standalone workstream on the `social-media-os-foundation` branc
 2. Store normalized search results in local research history.
 3. Build a source-linked, deterministic content strategy from the latest saved research.
 4. Generate platform-labelled content drafts using templates.
-5. Run basic deterministic quality checks and require explicit human review.
-6. Track revenue-funnel metrics from supplied inputs; analytics are not automatically collected.
+5. Build a production brief with scene timing estimates, voiceover segments, subtitle requirements, and visual asset checklist.
+6. Run basic deterministic quality checks and require explicit human review.
+7. Track revenue-funnel metrics from supplied inputs; analytics are not automatically collected.
 
 ## Requirements
 
@@ -56,6 +57,7 @@ Supported platform labels: YouTube, YouTube Shorts, Facebook, Instagram, TikTok,
 - The research brief module organizes source notes and links claims to listed URLs; it does not independently verify claims.
 - The strategy planner and content drafts are deterministic templates, not LLM-generated market research or creative content.
 - The pipeline creates and saves drafts only. It does not publish posts, send messages, or connect social accounts.
+- The production agent creates a planning brief only; it does not render audio/video, generate image assets, or upload media.
 - Video/audio rendering, scheduling, platform analytics ingestion, and automatic revenue attribution are not implemented.
 - Revenue metrics only calculate from manually or externally supplied values; they do not collect or verify those values.
 
