@@ -76,8 +76,8 @@ function approveDraft(record, { approvedBy, editedDraft } = {}) {
     throw new Error('Only pending drafts can be approved');
   }
   const approver = requiredText(approvedBy, 'approvedBy', 160);
-  if (record.reviewRequired !== false && !editedDraft) {
-    throw new Error('This enquiry requires human review and an explicitly reviewed draft');
+  if (editedDraft === undefined) {
+    throw new Error('Human approval requires an explicitly reviewed draft');
   }
   const draft = editedDraft === undefined ? record.draft : requiredText(editedDraft, 'editedDraft', 5000);
   const at = new Date().toISOString();
