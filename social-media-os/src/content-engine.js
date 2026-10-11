@@ -42,7 +42,7 @@ function createContentDraft(input) {
     title,
     caption: `${hook}\n\n${topic}: one practical takeaway for ${audience}.\n\n${script.split('\n\n').at(-1)}`,
     script,
-    hashtags: topic.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).slice(0, 3).map(tag => `#${tag}`),
+    hashtags: topic.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean).slice(0, 3).map(tag => `#${tag}`),
     status: 'draft',
     approvalRequired: true,
     published: false,
