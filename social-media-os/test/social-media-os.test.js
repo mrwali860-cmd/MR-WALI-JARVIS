@@ -274,6 +274,15 @@ test('dashboard research API returns normalized search results', async () => {
     assert.equal(history.count, 1);
     assert.equal(history.records[0].query, 'AI for small business');
     assert.equal(history.records[0].results[0].url, 'https://example.com/research');
+    const strategyResponse = await fetch(base + '/api/strategy/plan', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ brand: 'Sample Brand', audience: 'small business owners', goal: 'leads', platform: 'youtube-shorts', cadencePerWeek: 3 })
+    });
+    assert.equal(strategyResponse.status, 200);
+    const strategy = await strategyResponse.json();
+    assert.equal(strategy.weeklyPlan.length, 3);
+    assert.equal(strategy.weeklyPlan[0].sourceUrls[0], 'https://example.com/research');
+    assert.equal(strategy.basedOnResearchId, history.records[0].id);
     const invalid = await fetch(base + '/api/research/search', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ query: '', maxResults: 3 })
