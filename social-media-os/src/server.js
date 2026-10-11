@@ -7,6 +7,7 @@ const { appendDraft, readDrafts } = require('./draft-store');
 const { searchWeb } = require('./research-web-provider');
 const { appendResearch, readResearch } = require('./research-store');
 const { createContentStrategy } = require('./strategy-agent');
+const { buildDraftPipeline } = require('./content-pipeline');
 
 const PORT = Number(process.env.SOCIAL_MEDIA_OS_PORT || 4177);
 const STORE_PATH = process.env.SOCIAL_MEDIA_OS_STORE_PATH || path.join(__dirname, '..', 'data', 'drafts.jsonl');
@@ -90,6 +91,23 @@ async function handler(req, res, dependencies = {}) {
     const record = { id: 'research_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8), ...results };
     await appendResearch(RESEARCH_STORE_PATH, record);
     sendJson(res, 200, record);
+    return;
+  }
+  if (req.method === 'POST' && url.pathname === '/api/pipeline/run') {
+    const body = await readJsonBody(req);
+    if (typeof body.brand !== 'string' || !body.brand.trim() || typeof body.audience !== 'string' || !body.audience.trim()) {
+      sendJson(res, 400, { error: 'brand and audience must be non-empty strings' }); return;
+    }
+    const records = await readResearch(RESEARCH_STORE_PATH, 100);
+    if (!records.length) { sendJson(res, 409, { error: 'Run and save research before running the content pipeline.' }); return; }
+    const result = buildDraftPipeline({
+      brand: body.brand.trim(), audience: body.audience.trim(), goal: body.goal,
+      platform: body.platform || 'youtube-shorts', language: body.language || 'English',
+      cadencePerWeek: body.cadencePerWeek === undefined ? 3 : body.cadencePerWeek,
+      researchRecord: records[0]
+    });
+    for (const draft of result.drafts) await appendDraft(STORE_PATH, draft);
+    sendJson(res, 201, result);
     return;
   }
   if (req.method === 'POST' && url.pathname === '/api/strategy/plan') {
