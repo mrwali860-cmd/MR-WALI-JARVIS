@@ -36,6 +36,17 @@ test('preserves Urdu and other Unicode hashtags', () => {
   assert.deepEqual(mixedDraft.hashtags, ['#ai', '#کاروبار', '#2026']);
 });
 
+test('generates Urdu and bilingual drafts', () => {
+  const urduDraft = createContentDraft({ ...input, topic: 'مصنوعی ذہانت کاروبار', language: 'Urdu' });
+  assert.match(urduDraft.script, /اہم بات/);
+  assert.match(urduDraft.caption, /مصنوعی ذہانت کاروبار/);
+  assert.deepEqual(urduDraft.hashtags, ['#مصنوعی', '#ذہانت', '#کاروبار']);
+
+  const bilingualDraft = createContentDraft({ ...input, language: 'English + Urdu' });
+  assert.match(bilingualDraft.script, /Key idea \/ اہم بات/);
+  assert.match(bilingualDraft.script, /For small business owners/);
+});
+
 test('rejects unsupported platforms and goals', () => {
   assert.throws(() => createContentDraft({ ...input, platform: 'my-secret-platform' }), /Unsupported platform/);
   assert.throws(() => createContentDraft({ ...input, goal: 'go-viral-guaranteed' }), /Unsupported goal/);
