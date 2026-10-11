@@ -49,6 +49,43 @@ test('generates Urdu and bilingual drafts', () => {
 
 const { createResearchBrief } = require('../src/research-agent');
 
+const { searchWeb } = require('../src/research-web-provider');
+
+test('web search adapter validates and normalizes provider results', async () => {
+  let sentBody;
+  const result = await searchWeb('AI tools for small businesses', {
+    apiKey: 'test-key-not-real',
+    maxResults: 2,
+    fetchImpl: async (url, options) => {
+      sentBody = JSON.parse(options.body);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          results: [
+            { title: 'Guide', url: 'https://example.com/guide', content: 'Useful notes', score: 0.91 },
+            { title: 'Duplicate', url: 'https://example.com/guide', content: 'Duplicate notes', score: 0.8 },
+            { title: 'Unsafe', url: 'http://example.org/page', content: 'Must be ignored', score: 0.7 },
+            { title: 'Report', url: 'https://example.org/report', content: 'More notes', score: 0.8 }
+          ]
+        })
+      };
+    }
+  });
+  assert.equal(sentBody.query, 'AI tools for small businesses');
+  assert.equal(sentBody.max_results, 2);
+  assert.equal(result.results.length, 2);
+  assert.deepEqual(result.results.map(item => item.url), ['https://example.com/guide', 'https://example.org/report']);
+  assert.ok(result.limitations.length > 0);
+});
+
+test('web search adapter rejects missing keys, insecure endpoints, and failed providers', async () => {
+  await assert.rejects(searchWeb('AI', { apiKey: '', fetchImpl: async () => ({ ok: true, json: async () => ({ results: [] }) }) }), /TAVILY_API_KEY/);
+  await assert.rejects(searchWeb('AI', { apiKey: 'fake', endpoint: 'http://example.com/search', fetchImpl: async () => ({ ok: true, json: async () => ({ results: [] }) }) }), /HTTPS/);
+  await assert.rejects(searchWeb('AI', { apiKey: 'fake', fetchImpl: async () => ({ ok: false, status: 401 }) }), /HTTP 401/);
+  await assert.rejects(searchWeb('AI', { apiKey: 'fake', maxResults: 99, fetchImpl: async () => ({ ok: true, json: async () => ({ results: [] }) }) }), /maxResults/);
+});
+
 test('research brief requires HTTPS sources and ties claims to listed evidence', () => {
   const brief = createResearchBrief({
     topic: 'AI tools for small businesses',
