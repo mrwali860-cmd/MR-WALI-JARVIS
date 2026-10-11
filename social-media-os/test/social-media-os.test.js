@@ -24,6 +24,11 @@ test('creates a draft with required fields and no external publishing', () => {
   assert.equal(draft.quality.passed, true);
 });
 
+test('generates hashtags for Urdu and other Unicode topics', () => {
+  const draft = createContentDraft({ ...input, topic: 'مصنوعی ذہانت کاروبار', language: 'Urdu' });
+  assert.deepEqual(draft.hashtags, ['#مصنوعی', '#ذہانت', '#کاروبار']);
+});
+
 test('rejects unsupported platforms and goals', () => {
   assert.throws(() => createContentDraft({ ...input, platform: 'my-secret-platform' }), /Unsupported platform/);
   assert.throws(() => createContentDraft({ ...input, goal: 'go-viral-guaranteed' }), /Unsupported goal/);
