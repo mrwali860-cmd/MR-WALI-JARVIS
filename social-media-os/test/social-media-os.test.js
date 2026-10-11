@@ -283,6 +283,20 @@ test('dashboard research API returns normalized search results', async () => {
     assert.equal(strategy.weeklyPlan.length, 3);
     assert.equal(strategy.weeklyPlan[0].sourceUrls[0], 'https://example.com/research');
     assert.equal(strategy.basedOnResearchId, history.records[0].id);
+
+    const pipelineResponse = await fetch(base + '/api/pipeline/run', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ brand: 'Sample Brand', audience: 'small business owners', goal: 'leads', platform: 'youtube-shorts', language: 'English', cadencePerWeek: 2 })
+    });
+    assert.equal(pipelineResponse.status, 201);
+    const pipeline = await pipelineResponse.json();
+    assert.equal(pipeline.status, 'draft_only');
+    assert.equal(pipeline.publishingEnabled, false);
+    assert.equal(pipeline.humanApprovalRequired, true);
+    assert.equal(pipeline.draftCount, 2);
+    assert.ok(pipeline.drafts.every(draft => draft.status === 'draft' && draft.published === false && draft.quality.passed));
+    assert.equal(pipeline.drafts[0].researchId, history.records[0].id);
+    assert.ok(pipeline.drafts[0].sourceUrls.includes('https://example.com/research'));
     const invalid = await fetch(base + '/api/research/search', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ query: '', maxResults: 3 })
@@ -290,6 +304,7 @@ test('dashboard research API returns normalized search results', async () => {
     assert.equal(invalid.status, 400);
   } finally {
     await new Promise(resolve => server.close(resolve));
+    await fs.rm(path.join(testStoreDir, 'drafts.jsonl'), { force: true });
   }
 });
 
