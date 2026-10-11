@@ -187,9 +187,28 @@ test('returns an empty list when no local draft store exists', async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
 });
 
+const { appendResearch, readResearch } = require('../src/research-store');
+
+test('research history persists and returns newest records first', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'social-media-os-research-'));
+  const file = path.join(dir, 'research.jsonl');
+  try {
+    await appendResearch(file, { id: 'r1', query: 'first', results: [] });
+    await appendResearch(file, { id: 'r2', query: 'second', results: [] });
+    await appendResearch(file, { id: 'r1', query: 'first updated', results: [] });
+    const records = await readResearch(file, 10);
+    assert.deepEqual(records.map(record => record.query), ['first updated', 'second']);
+    assert.deepEqual((await readResearch(file, 1)).map(record => record.query), ['first updated']);
+    await assert.rejects(readResearch(file, 0), /limit/);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
 const fsSync = require('node:fs');
 const testStoreDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'social-media-os-server-'));
 process.env.SOCIAL_MEDIA_OS_STORE_PATH = path.join(testStoreDir, 'drafts.jsonl');
+process.env.SOCIAL_MEDIA_OS_RESEARCH_STORE_PATH = path.join(testStoreDir, 'research.jsonl');
 const { createServer } = require('../src/server');
 
 test('dashboard research API returns normalized search results', async () => {
@@ -216,6 +235,12 @@ test('dashboard research API returns normalized search results', async () => {
     assert.equal(data.query, 'AI for small business');
     assert.equal(data.results[0].url, 'https://example.com/research');
     assert.equal(data.receivedMaxResults, 3);
+    const historyResponse = await fetch(base + '/api/research/history');
+    assert.equal(historyResponse.status, 200);
+    const history = await historyResponse.json();
+    assert.equal(history.count, 1);
+    assert.equal(history.records[0].query, 'AI for small business');
+    assert.equal(history.records[0].results[0].url, 'https://example.com/research');
     const invalid = await fetch(base + '/api/research/search', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ query: '', maxResults: 3 })
@@ -268,5 +293,6 @@ test('local dashboard API creates, lists, and reviews drafts without publishing'
     await new Promise(resolve => server.close(resolve));
     fsSync.rmSync(testStoreDir, { recursive: true, force: true });
     delete process.env.SOCIAL_MEDIA_OS_STORE_PATH;
+    delete process.env.SOCIAL_MEDIA_OS_RESEARCH_STORE_PATH;
   }
 });
