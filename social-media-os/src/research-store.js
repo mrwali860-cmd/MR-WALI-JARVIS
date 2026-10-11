@@ -25,6 +25,7 @@ async function readResearch(filePath, limit = 20) {
     const latest = new Map();
     for (const record of records) {
       if (!record || typeof record.id !== 'string' || !record.id) throw new Error('Research record is missing a stable ID');
+      latest.delete(record.id);
       latest.set(record.id, record);
     }
     return [...latest.values()].slice(-limit).reverse();
