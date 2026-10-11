@@ -11,7 +11,9 @@ async function searchWeb(query, options = {}) {
   const normalizedQuery = requireText(query, 'query');
   const apiKeyInput = requireText(options.apiKey ?? process.env.TAVILY_API_KEY, 'TAVILY_API_KEY');
   // API tokens never contain whitespace; tolerate clipboard line breaks/spaces without logging the token.
-  const apiKey = apiKeyInput.replace(/\s+/g, '');
+  const apiKey = apiKeyInput
+    .replace(/\s+/g, '')
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '');
   if (/[^\x21-\x7E]/.test(apiKey)) {
     throw new TypeError('TAVILY_API_KEY contains non-ASCII characters; copy the key again');
   }
