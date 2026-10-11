@@ -33,3 +33,7 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Run Social Media OS tests
+        run: npm test
+        working-directory: social-media-os
