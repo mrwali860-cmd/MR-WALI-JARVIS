@@ -27,15 +27,40 @@ function createContentDraft(input) {
   if (!GOALS.includes(goal)) throw new RangeError(`Unsupported goal: ${goal}`);
 
   const title = `${topic} | ${brand}`;
-  const hook = `For ${audience}: what should you know about ${topic}?`;
-  const script = [
-    hook,
-    `The key idea: ${topic} matters because it affects ${audience}.`,
-    'Explain one practical point, show a concrete example, and avoid unsupported claims.',
-    goal === 'leads' || goal === 'clients' || goal === 'sales' || goal === 'revenue'
-      ? 'Call to action: invite interested viewers to ask for the next step.'
-      : 'Call to action: invite viewers to share a useful question or follow for more.'
-  ].join('\n\n');
+  const isUrdu = language.toLowerCase() === 'urdu';
+  const isBilingual = language.toLowerCase() === 'english + urdu';
+  const hook = isUrdu
+    ? `${audience} کے لیے: ${topic} کے بارے میں کیا جاننا ضروری ہے؟`
+    : isBilingual
+      ? `For ${audience}: what should you know about ${topic}?\\n\\n${audience} کے لیے: ${topic} کے بارے میں کیا جاننا ضروری ہے؟`
+      : `For ${audience}: what should you know about ${topic}?`;
+  const isConversionGoal = ['leads', 'clients', 'sales', 'revenue'].includes(goal);
+  const script = isUrdu
+    ? [
+        hook,
+        `اہم بات: ${topic} اس لیے اہم ہے کیونکہ اس کا تعلق ${audience} سے ہے۔`,
+        'ایک عملی نکتہ سمجھائیں، واضح مثال دیں، اور غیر مصدقہ دعووں سے گریز کریں۔',
+        isConversionGoal
+          ? 'اگلا قدم: دلچسپی رکھنے والے ناظرین کو مزید معلومات کے لیے رابطہ کرنے کی دعوت دیں۔'
+          : 'ناظرین کو مفید سوال پوچھنے یا مزید مواد کے لیے فالو کرنے کی دعوت دیں۔'
+      ].join('\\n\\n')
+    : isBilingual
+      ? [
+          hook,
+          `Key idea / اہم بات: ${topic} matters to ${audience}.`,
+          'Explain one practical point, show a concrete example, and avoid unsupported claims. / ایک عملی نکتہ اور واضح مثال دیں، غیر مصدقہ دعووں سے گریز کریں۔',
+          isConversionGoal
+            ? 'Next step: invite interested viewers to ask for details. / دلچسپی رکھنے والے ناظرین کو مزید معلومات کے لیے رابطہ کرنے کی دعوت دیں۔'
+            : 'Invite viewers to ask a useful question or follow for more. / ناظرین کو سوال پوچھنے یا مزید مواد کے لیے فالو کرنے کی دعوت دیں۔'
+        ].join('\\n\\n')
+      : [
+          hook,
+          `The key idea: ${topic} matters because it affects ${audience}.`,
+          'Explain one practical point, show a concrete example, and avoid unsupported claims.',
+          isConversionGoal
+            ? 'Call to action: invite interested viewers to ask for the next step.'
+            : 'Call to action: invite viewers to share a useful question or follow for more.'
+        ].join('\\n\\n');
   const draft = {
     id: `draft_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
     brand, audience, topic, language, platform, goal,
