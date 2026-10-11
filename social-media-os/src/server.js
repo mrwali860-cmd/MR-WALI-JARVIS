@@ -145,7 +145,7 @@ async function handler(req, res, dependencies = {}) {
     sendJson(res, 201, { saved: true, draft });
     return;
   }
-  const productionMatch = url.pathname.match(/^\\/api\\/drafts\\/([^/]+)\\/production-brief$/);
+  const productionMatch = url.pathname.match(/^\/api\/drafts\/([^/]+)\/production-brief$/);
   if (req.method === 'POST' && productionMatch) {
     const body = await readJsonBody(req);
     const drafts = await readDrafts(STORE_PATH);
