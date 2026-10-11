@@ -47,6 +47,36 @@ test('generates Urdu and bilingual drafts', () => {
   assert.match(bilingualDraft.script, /For small business owners/);
 });
 
+const { createResearchBrief } = require('../src/research-agent');
+
+test('research brief requires HTTPS sources and ties claims to listed evidence', () => {
+  const brief = createResearchBrief({
+    topic: 'AI tools for small businesses',
+    audience: 'small business owners',
+    sources: [
+      { title: 'Official guide', url: 'https://example.com/guide', notes: 'Explains workflow automation.' },
+      { title: 'Research report', url: 'https://example.org/report', notes: 'Discusses adoption barriers.' }
+    ],
+    claims: [
+      { text: 'Automation can reduce repetitive work.', sourceUrls: ['https://example.com/guide'] }
+    ],
+    questions: ['Which tasks are repetitive?', 'What evidence supports the claimed benefit?']
+  });
+  assert.equal(brief.status, 'research_intake_complete');
+  assert.equal(brief.sources.length, 2);
+  assert.equal(brief.claims[0].evidenceStatus, 'source-linked; human verification required');
+  assert.equal(brief.readyForContentPlanning, true);
+  assert.match(brief.limitations[0], /does not fetch/);
+});
+
+test('research brief rejects insecure, duplicate, or unlisted evidence URLs', () => {
+  const base = { topic: 'AI', audience: 'owners', sources: [{ title: 'Guide', url: 'https://example.com/guide', notes: 'Notes' }] };
+  assert.throws(() => createResearchBrief({ ...base, sources: [{ ...base.sources[0], url: 'http://example.com/guide' }] }), /HTTPS/);
+  assert.throws(() => createResearchBrief({ ...base, sources: [base.sources[0], base.sources[0]] }), /unique/);
+  assert.throws(() => createResearchBrief({ ...base, claims: [{ text: 'Unsupported', sourceUrls: ['https://unknown.example/x'] }] }), /not included in sources/);
+  assert.throws(() => createResearchBrief({ topic: 'AI', audience: 'owners', sources: [] }), /at least one source/);
+});
+
 test('rejects unsupported platforms and goals', () => {
   assert.throws(() => createContentDraft({ ...input, platform: 'my-secret-platform' }), /Unsupported platform/);
   assert.throws(() => createContentDraft({ ...input, goal: 'go-viral-guaranteed' }), /Unsupported goal/);
