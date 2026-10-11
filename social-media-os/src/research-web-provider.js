@@ -25,9 +25,11 @@ async function searchWeb(query, options = {}) {
 
   const response = await fetchImpl(parsedEndpoint.href, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${apiKey}`
+    },
     body: JSON.stringify({
-      api_key: apiKey,
       query: normalizedQuery,
       max_results: maxResults,
       search_depth: 'basic',
