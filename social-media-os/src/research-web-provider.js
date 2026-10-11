@@ -9,8 +9,12 @@ function requireText(value, field) {
 
 async function searchWeb(query, options = {}) {
   const normalizedQuery = requireText(query, 'query');
-  const apiKey = requireText(options.apiKey ?? process.env.TAVILY_API_KEY, 'TAVILY_API_KEY');
+  const apiKeyInput = requireText(options.apiKey ?? process.env.TAVILY_API_KEY, 'TAVILY_API_KEY');
+  // API tokens never contain whitespace; tolerate clipboard line breaks/spaces without logging the token.
+  const apiKey = apiKeyInput.replace(/\s+/g, '');
   if (/[^\x21-\x7E]/.test(apiKey)) {
+    throw new TypeError('TAVILY_API_KEY contains non-ASCII characters; copy the key again');
+  }
     throw new TypeError('TAVILY_API_KEY contains whitespace or non-ASCII characters; copy the key again');
   }
   const maxResults = options.maxResults ?? 5;
