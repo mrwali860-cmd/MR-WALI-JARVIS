@@ -115,6 +115,39 @@ test('research brief rejects insecure, duplicate, or unlisted evidence URLs', ()
   assert.throws(() => createResearchBrief({ topic: 'AI', audience: 'owners', sources: [] }), /at least one source/);
 });
 
+const { createContentStrategy } = require('../src/strategy-agent');
+
+test('strategy planner creates a source-linked weekly plan', () => {
+  const strategy = createContentStrategy({
+    brand: 'Sample Brand',
+    goal: 'leads',
+    platforms: ['youtube-shorts', 'instagram'],
+    cadencePerWeek: 4,
+    researchBrief: {
+      topic: 'Practical AI workflows',
+      audience: 'small business owners',
+      sources: [
+        { id: 'source_1', title: 'Official guide', url: 'https://example.com/guide' },
+        { id: 'source_2', title: 'Research report', url: 'https://example.org/report' }
+      ]
+    }
+  });
+  assert.equal(strategy.status, 'plan_draft');
+  assert.equal(strategy.requiresHumanReview, true);
+  assert.equal(strategy.weeklyPlan.length, 4);
+  assert.equal(strategy.weeklyPlan[0].sourceUrls[0], 'https://example.com/guide');
+  assert.equal(strategy.weeklyPlan[0].objective, 'leads');
+  assert.equal(strategy.measurementPlan.primaryMetric, 'qualified leads');
+  assert.ok(strategy.contentPillars.length >= 3);
+});
+
+test('strategy planner rejects unsupported goals, platforms, and missing research sources', () => {
+  const researchBrief = { topic: 'AI', audience: 'owners', sources: [{ title: 'Guide', url: 'https://example.com/guide' }] };
+  assert.throws(() => createContentStrategy({ brand: 'B', goal: 'viral', researchBrief }), /Unsupported goal/);
+  assert.throws(() => createContentStrategy({ brand: 'B', goal: 'leads', platforms: ['unknown'], researchBrief }), /Unsupported platform/);
+  assert.throws(() => createContentStrategy({ brand: 'B', goal: 'leads', researchBrief: { topic: 'AI', audience: 'owners', sources: [] } }), /at least one source/);
+});
+
 test('rejects unsupported platforms and goals', () => {
   assert.throws(() => createContentDraft({ ...input, platform: 'my-secret-platform' }), /Unsupported platform/);
   assert.throws(() => createContentDraft({ ...input, goal: 'go-viral-guaranteed' }), /Unsupported goal/);
