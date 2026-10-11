@@ -29,6 +29,13 @@ test('generates hashtags for Urdu and other Unicode topics', () => {
   assert.deepEqual(draft.hashtags, ['#مصنوعی', '#ذہانت', '#کاروبار']);
 });
 
+test('preserves Urdu and other Unicode hashtags', () => {
+  const urduDraft = createContentDraft({ ...input, topic: 'مصنوعی ذہانت کاروبار' , language: 'Urdu' });
+  assert.deepEqual(urduDraft.hashtags, ['#مصنوعی', '#ذہانت', '#کاروبار']);
+  const mixedDraft = createContentDraft({ ...input, topic: 'AI کاروبار 2026' });
+  assert.deepEqual(mixedDraft.hashtags, ['#ai', '#کاروبار', '#2026']);
+});
+
 test('rejects unsupported platforms and goals', () => {
   assert.throws(() => createContentDraft({ ...input, platform: 'my-secret-platform' }), /Unsupported platform/);
   assert.throws(() => createContentDraft({ ...input, goal: 'go-viral-guaranteed' }), /Unsupported goal/);
