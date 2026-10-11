@@ -21,7 +21,7 @@ async function searchWeb(query, options = {}) {
   let parsedEndpoint;
   try { parsedEndpoint = new URL(endpoint); }
   catch { throw new TypeError('endpoint must be a valid HTTPS URL'); }
-  if (parsedEndpoint.protocol !== 'https:') throw new TypeError('endpoint must use HTTPS');
+  if (parsedEndpoint.protocol !== 'https:' || parsedEndpoint.hostname !== 'api.tavily.com') throw new TypeError('endpoint must be the official Tavily HTTPS API endpoint');
 
   const response = await fetchImpl(parsedEndpoint.href, {
     method: 'POST',
