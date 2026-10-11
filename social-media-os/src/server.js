@@ -71,7 +71,15 @@ async function handler(req, res, dependencies = {}) {
   }
   if (req.method === 'POST' && url.pathname === '/api/research/search') {
     const body = await readJsonBody(req);
-    const results = await (dependencies.researchSearch || searchWeb)(body.query, { maxResults: body.maxResults });
+    if (typeof body.query !== 'string' || !body.query.trim()) {
+      sendJson(res, 400, { error: 'query must be a non-empty string' });
+      return;
+    }
+    if (body.maxResults !== undefined && (!Number.isInteger(body.maxResults) || body.maxResults < 1 || body.maxResults > 10)) {
+      sendJson(res, 400, { error: 'maxResults must be an integer from 1 to 10' });
+      return;
+    }
+    const results = await (dependencies.researchSearch || searchWeb)(body.query.trim(), { maxResults: body.maxResults });
     sendJson(res, 200, results);
     return;
   }
