@@ -53,11 +53,13 @@ const { searchWeb } = require('../src/research-web-provider');
 
 test('web search adapter validates and normalizes provider results', async () => {
   let sentBody;
+  let sentHeaders;
   const result = await searchWeb('AI tools for small businesses', {
     apiKey: 'test-key-not-real',
     maxResults: 2,
     fetchImpl: async (url, options) => {
       sentBody = JSON.parse(options.body);
+      sentHeaders = options.headers;
       return {
         ok: true,
         status: 200,
@@ -72,6 +74,8 @@ test('web search adapter validates and normalizes provider results', async () =>
       };
     }
   });
+  assert.equal(sentHeaders.authorization, 'Bearer test-key-not-real');
+  assert.equal(Object.hasOwn(sentBody, 'api_key'), false);
   assert.equal(sentBody.query, 'AI tools for small businesses');
   assert.equal(sentBody.max_results, 2);
   assert.equal(result.results.length, 2);
