@@ -77,7 +77,7 @@ function approveDraft(record, { approvedBy, editedDraft } = {}) {
   }
   const approver = requiredText(approvedBy, 'approvedBy', 160);
   if (editedDraft === undefined) {
-    throw new Error('Human approval requires an explicitly reviewed draft');
+    throw new Error('Human approval requires human review of an explicitly reviewed draft');
   }
   const draft = editedDraft === undefined ? record.draft : requiredText(editedDraft, 'editedDraft', 5000);
   const at = new Date().toISOString();
