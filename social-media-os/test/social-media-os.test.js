@@ -83,6 +83,18 @@ test('web search adapter validates and normalizes provider results', async () =>
   assert.ok(result.limitations.length > 0);
 });
 
+test('web search adapter safely trims whitespace copied around a Tavily API key', async () => {
+  let sentHeaders;
+  await searchWeb('AI', {
+    apiKey: '  test-\nkey-not-real  ',
+    fetchImpl: async (_url, options) => {
+      sentHeaders = options.headers;
+      return { ok: true, status: 200, json: async () => ({ results: [] }) };
+    }
+  });
+  assert.equal(sentHeaders.authorization, 'Bearer test-key-not-real');
+});
+
 test('web search adapter rejects missing keys, insecure endpoints, and failed providers', async () => {
   await assert.rejects(searchWeb('AI', { apiKey: '', fetchImpl: async () => ({ ok: true, json: async () => ({ results: [] }) }) }), /TAVILY_API_KEY/);
   await assert.rejects(searchWeb('AI', { apiKey: 'fake', endpoint: 'http://example.com/search', fetchImpl: async () => ({ ok: true, json: async () => ({ results: [] }) }) }), /HTTPS/);
