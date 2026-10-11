@@ -34,7 +34,7 @@ async function main() {
       : null;
     process.stderr.write('LIVE_SEARCH_FAILED: ' + message +
       (code ? ' | CODE: ' + code : '') +
-      (causeMessage ? ' | CAUSE: ' + causeMessage : '') + '\\n');
+      (causeMessage ? ' | CAUSE: ' + causeMessage : '') + '\n');
     process.exitCode = 1;
   }
 }
