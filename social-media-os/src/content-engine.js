@@ -32,7 +32,7 @@ function createContentDraft(input) {
   const hook = isUrdu
     ? `${audience} کے لیے: ${topic} کے بارے میں کیا جاننا ضروری ہے؟`
     : isBilingual
-      ? `For ${audience}: what should you know about ${topic}?\\n\\n${audience} کے لیے: ${topic} کے بارے میں کیا جاننا ضروری ہے؟`
+      ? `For ${audience}: what should you know about ${topic}?\n\n${audience} کے لیے: ${topic} کے بارے میں کیا جاننا ضروری ہے؟`
       : `For ${audience}: what should you know about ${topic}?`;
   const isConversionGoal = ['leads', 'clients', 'sales', 'revenue'].includes(goal);
   const script = isUrdu
@@ -43,7 +43,7 @@ function createContentDraft(input) {
         isConversionGoal
           ? 'اگلا قدم: دلچسپی رکھنے والے ناظرین کو مزید معلومات کے لیے رابطہ کرنے کی دعوت دیں۔'
           : 'ناظرین کو مفید سوال پوچھنے یا مزید مواد کے لیے فالو کرنے کی دعوت دیں۔'
-      ].join('\\n\\n')
+      ].join('\n\n')
     : isBilingual
       ? [
           hook,
@@ -52,7 +52,7 @@ function createContentDraft(input) {
           isConversionGoal
             ? 'Next step: invite interested viewers to ask for details. / دلچسپی رکھنے والے ناظرین کو مزید معلومات کے لیے رابطہ کرنے کی دعوت دیں۔'
             : 'Invite viewers to ask a useful question or follow for more. / ناظرین کو سوال پوچھنے یا مزید مواد کے لیے فالو کرنے کی دعوت دیں۔'
-        ].join('\\n\\n')
+        ].join('\n\n')
       : [
           hook,
           `The key idea: ${topic} matters because it affects ${audience}.`,
@@ -60,7 +60,7 @@ function createContentDraft(input) {
           isConversionGoal
             ? 'Call to action: invite interested viewers to ask for the next step.'
             : 'Call to action: invite viewers to share a useful question or follow for more.'
-        ].join('\\n\\n');
+        ].join('\n\n');
   const draft = {
     id: `draft_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
     brand, audience, topic, language, platform, goal,
