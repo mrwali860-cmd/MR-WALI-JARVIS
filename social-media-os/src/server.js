@@ -8,6 +8,7 @@ const { searchWeb } = require('./research-web-provider');
 const { appendResearch, readResearch } = require('./research-store');
 const { createContentStrategy } = require('./strategy-agent');
 const { buildDraftPipeline } = require('./content-pipeline');
+const { buildProductionBrief } = require('./production-agent');
 
 const PORT = Number(process.env.SOCIAL_MEDIA_OS_PORT || 4177);
 const STORE_PATH = process.env.SOCIAL_MEDIA_OS_STORE_PATH || path.join(__dirname, '..', 'data', 'drafts.jsonl');
@@ -142,6 +143,16 @@ async function handler(req, res, dependencies = {}) {
     const draft = createContentDraft(body);
     await appendDraft(STORE_PATH, draft);
     sendJson(res, 201, { saved: true, draft });
+    return;
+  }
+  const productionMatch = url.pathname.match(/^\\/api\\/drafts\\/([^/]+)\\/production-brief$/);
+  if (req.method === 'POST' && productionMatch) {
+    const body = await readJsonBody(req);
+    const drafts = await readDrafts(STORE_PATH);
+    const draft = drafts.find(item => item.id === decodeURIComponent(productionMatch[1]));
+    if (!draft) { sendJson(res, 404, { error: 'Draft not found' }); return; }
+    const brief = buildProductionBrief(draft, { format: body.format });
+    sendJson(res, 200, { sourceDraftId: draft.id, brief });
     return;
   }
   const approvalMatch = url.pathname.match(/^\/api\/drafts\/([^/]+)\/approval$/);
