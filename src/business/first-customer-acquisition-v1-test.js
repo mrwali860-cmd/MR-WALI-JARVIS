@@ -14,14 +14,14 @@ const result = engine.build([
     company: "Example Traders",
     category: "Retail",
     city: "Hangu",
-    website: "https://example.test",
+    website: "https://example.org",\n    email: "contact@example.org",
     source_url: "https://example.test/about",
     observed_problem: "",
     verified_by_human: true
   },
   {
     company: "Example Traders duplicate",
-    website: "https://example.test"
+    website: "https://example.org"
   },
   {
     company: "No Contact Shop",
@@ -35,7 +35,7 @@ assert.equal(result.mode, "DRAFT_ONLY");
 assert.equal(result.summary.input_count, 4);
 assert.equal(result.summary.accepted_count, 2);
 assert.equal(result.summary.rejected_or_duplicate_count, 2);
-assert.equal(result.summary.contact_available, 1);
+assert.equal(result.summary.contact_available, 1);\nassert.equal(result.summary.verification_required, 0);
 assert.equal(result.summary.contact_required, 1);
 assert.equal(result.summary.messages_sent, 0);
 assert.equal(result.summary.sales_won, 0);
@@ -44,7 +44,7 @@ assert.equal(result.prospects[0].approval_required, true);
 assert.equal(result.prospects[0].send_status, "NOT_SENT");
 assert.match(result.prospects[0].outreach_draft, /I do not want to assume/);
 assert.doesNotMatch(result.prospects[0].outreach_draft, /I noticed your real estate work/);
-assert.equal(result.prospects[1].stage, "NEEDS_CONTACT_RESEARCH");
+assert.equal(result.prospects[1].stage, "NEEDS_CONTACT_RESEARCH");\n\nconst websiteOnly = engine.build([{ company: "Website Only Shop", website: "https://shop.example.org", verified_by_human: true }]);\nassert.equal(websiteOnly.summary.contact_available, 0);\nassert.equal(websiteOnly.prospects[0].stage, "NEEDS_CONTACT_RESEARCH");\n\nconst placeholder = engine.build([{ company: "REPLACE_WITH_VERIFIED_BUSINESS" }]);\nassert.equal(placeholder.summary.accepted_count, 0);\nassert.equal(placeholder.summary.rejected_or_duplicate_count, 1);
 assert.equal(result.controls.automatic_send, false);
 
 const invalid = engine.build({});
