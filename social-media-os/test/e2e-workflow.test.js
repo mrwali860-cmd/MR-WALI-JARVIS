@@ -6,13 +6,12 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 
-// Isolate persistent stores before importing the server module.
-const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'social-media-os-e2e-'));
-process.env.SOCIAL_MEDIA_OS_STORE_PATH = path.join(tempDir, 'drafts.jsonl');
-process.env.SOCIAL_MEDIA_OS_RESEARCH_STORE_PATH = path.join(tempDir, 'research.jsonl');
-const { createServer } = require('../src/server');
-
 test('E2E: research -> bilingual strategy -> saved drafts -> production brief -> approval, without publishing', async () => {
+  // Isolate persistent stores before importing the server module.
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'social-media-os-e2e-'));
+  process.env.SOCIAL_MEDIA_OS_STORE_PATH = path.join(tempDir, 'drafts.jsonl');
+  process.env.SOCIAL_MEDIA_OS_RESEARCH_STORE_PATH = path.join(tempDir, 'research.jsonl');
+  const { createServer } = require('../src/server');
   const server = createServer({
     researchSearch: async (query, options) => ({
       query,
