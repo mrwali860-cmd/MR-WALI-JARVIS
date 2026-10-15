@@ -10,7 +10,12 @@ function clean(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function isPlaceholder(value) {\n  const normalized = clean(value).toLowerCase();\n  return !normalized || normalized.startsWith("replace_with_") || normalized.includes("example.test");\n}\n\nfunction prospectIdentity(p) {
+function isPlaceholder(value) {
+  const normalized = clean(value).toLowerCase();
+  return !normalized || normalized.startsWith("replace_with_") || normalized.includes("example.test");
+}
+
+function prospectIdentity(p) {
   const website = clean(p.website).toLowerCase().replace(/\/$/, "");
   if (website) return `website:${website}`;
   const email = clean(p.email).toLowerCase();
@@ -57,7 +62,8 @@ class FirstCustomerAcquisitionV1 {
       const website = clean(raw.website);
       const email = clean(raw.email);
       const phone = clean(raw.phone);
-      const hasContact = Boolean(email || phone);\n      const verified = raw.verified_by_human === true;
+      const hasContact = Boolean(email || phone);
+      const verified = raw.verified_by_human === true;
       const contactStatus = hasContact ? "CONTACT_AVAILABLE" : "CONTACT_REQUIRED";
       const problemEvidence = clean(raw.observed_problem);
       const personalization = problemEvidence
@@ -122,7 +128,8 @@ class FirstCustomerAcquisitionV1 {
         rejected_or_duplicate_count: rejected,
         contact_available: rows.filter(p => p.contact_status === "CONTACT_AVAILABLE").length,
         contact_required: rows.filter(p => p.contact_status === "CONTACT_REQUIRED").length,
-        drafts_ready_for_review: rows.filter(p => p.stage === "DRAFT_READY_FOR_REVIEW").length,\n        verification_required: rows.filter(p => p.stage === "NEEDS_VERIFICATION").length,
+        drafts_ready_for_review: rows.filter(p => p.stage === "DRAFT_READY_FOR_REVIEW").length,
+        verification_required: rows.filter(p => p.stage === "NEEDS_VERIFICATION").length,
         approvals_required: rows.length,
         messages_sent: 0,
         sales_won: 0
@@ -143,7 +150,8 @@ class FirstCustomerAcquisitionV1 {
       rejected_or_duplicate_count: 0,
       contact_available: 0,
       contact_required: 0,
-      drafts_ready_for_review: 0,\n      verification_required: 0,
+      drafts_ready_for_review: 0,
+      verification_required: 0,
       approvals_required: 0,
       messages_sent: 0,
       sales_won: 0
