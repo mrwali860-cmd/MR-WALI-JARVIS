@@ -73,7 +73,7 @@ test('E2E: research -> bilingual strategy -> saved drafts -> production brief ->
     });
     assert.equal(strategy.weeklyPlan.length, 3);
     assert.equal(strategy.basedOnResearchId, research.id);
-    assert.ok(strategy.weeklyPlan.every(slot => slot.sourceUrls.includes('https://example.com/ai-guide')));
+    assert.ok(strategy.weeklyPlan.every(slot => slot.sourceUrls.length === 1 && ['https://example.com/ai-guide', 'https://example.org/small-business-ai'].includes(slot.sourceUrls[0])));
 
     const pipeline = await post('/api/pipeline/run', {
       brand: 'Mr Wali AI Lab',
@@ -89,7 +89,7 @@ test('E2E: research -> bilingual strategy -> saved drafts -> production brief ->
     assert.equal(pipeline.draftCount, 3);
     assert.ok(pipeline.drafts.every(draft => draft.status === 'draft' && draft.published === false));
     assert.ok(pipeline.drafts.every(draft => draft.language === 'English + Urdu'));
-    assert.ok(pipeline.drafts.every(draft => draft.sourceUrls.includes('https://example.com/ai-guide')));
+    assert.ok(pipeline.drafts.every(draft => draft.sourceUrls.length === 1 && ['https://example.com/ai-guide', 'https://example.org/small-business-ai'].includes(draft.sourceUrls[0])));
 
     const draft = pipeline.drafts[0];
     const production = await post('/api/drafts/' + encodeURIComponent(draft.id) + '/production-brief', {
