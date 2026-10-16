@@ -26,11 +26,12 @@ test("Dashboard UI has the Control Center shell", () => {
 test("Dashboard UI consumes only the defined read APIs", () => {
     assert.ok(html.includes("fetch('/api/dashboard/status')"));
     assert.ok(html.includes("fetch('/api/dashboard/services')"));
+    assert.ok(html.includes("fetch('/api/dashboard/activity')"));
     assert.ok(!html.includes("fetch('/api/dashboard/actions'"));
 });
 
 test("Dashboard UI exposes core-owned state sections", () => {
-    for (const section of ["Services", "Task Status", "Blockers & Gates", "Service Status"]) {
+    for (const section of ["Services", "Task Status", "Blockers & Gates", "Service Status", "Recent Activity"]) {
         assert.ok(html.includes(`<h2>${section}</h2>`), `Missing UI section: ${section}`);
     }
 });
