@@ -95,6 +95,10 @@ test('E2E: research -> bilingual strategy -> saved drafts -> production brief ->
     assert.ok(pipeline.drafts.every(draft => draft.researchVerification.status === 'unverified_search_leads'));
     assert.ok(pipeline.drafts.every(draft => draft.researchVerification.claimsVerified === false));
     assert.ok(pipeline.drafts.every(draft => draft.researchVerification.requiredBeforePublishing === true));
+    assert.ok(pipeline.drafts.every(draft => draft.editorialEvidenceReview.status === 'pending'));
+    assert.ok(pipeline.drafts.every(draft => draft.editorialEvidenceReview.scriptUsesResearchNotes === false));
+    assert.ok(pipeline.drafts.every(draft => draft.editorialEvidenceReview.sourceNotesAreLeadsOnly === true));
+    assert.ok(pipeline.drafts.every(draft => draft.editorialEvidenceReview.checklist.length === 4));
 
     const draft = pipeline.drafts[0];
     const production = await post('/api/drafts/' + encodeURIComponent(draft.id) + '/production-brief', {
