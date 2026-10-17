@@ -20,7 +20,7 @@ test('E2E: research -> bilingual strategy -> saved drafts -> production brief ->
       results: [
         {
           title: 'Official AI documentation',
-          url: 'https://example.com/ai-guide',
+          url: 'https://example.com',
           notes: 'A source lead about practical AI workflows.',
           score: 0.95
         },
@@ -73,7 +73,7 @@ test('E2E: research -> bilingual strategy -> saved drafts -> production brief ->
     });
     assert.equal(strategy.weeklyPlan.length, 3);
     assert.equal(strategy.basedOnResearchId, research.id);
-    assert.ok(strategy.weeklyPlan.every(slot => slot.sourceUrls.length === 1 && ['https://example.com/ai-guide', 'https://example.org/small-business-ai'].includes(slot.sourceUrls[0])));
+    assert.ok(strategy.weeklyPlan.every(slot => slot.sourceUrls.length === 1 && ['https://example.com/', 'https://example.org/small-business-ai'].includes(slot.sourceUrls[0])));
 
     const pipeline = await post('/api/pipeline/run', {
       brand: 'Mr Wali AI Lab',
@@ -89,7 +89,7 @@ test('E2E: research -> bilingual strategy -> saved drafts -> production brief ->
     assert.equal(pipeline.draftCount, 3);
     assert.ok(pipeline.drafts.every(draft => draft.status === 'draft' && draft.published === false));
     assert.ok(pipeline.drafts.every(draft => draft.language === 'English + Urdu'));
-    assert.ok(pipeline.drafts.every(draft => draft.sourceUrls.length === 1 && ['https://example.com/ai-guide', 'https://example.org/small-business-ai'].includes(draft.sourceUrls[0])));
+    assert.ok(pipeline.drafts.every(draft => draft.sourceUrls.length === 1 && ['https://example.com/', 'https://example.org/small-business-ai'].includes(draft.sourceUrls[0])));
     assert.ok(pipeline.drafts.every(draft => draft.researchContext.length === 1));
     assert.ok(pipeline.drafts.every(draft => draft.researchContext[0].notes.length > 0));
     assert.ok(pipeline.drafts.every(draft => draft.researchVerification.status === 'unverified_search_leads'));
