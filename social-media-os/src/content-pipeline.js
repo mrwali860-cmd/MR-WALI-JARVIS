@@ -52,6 +52,17 @@ function buildDraftPipeline({ brand, audience, goal, platform = 'youtube-shorts'
         claimsVerified: false,
         requiredBeforePublishing: true
       },
+      editorialEvidenceReview: {
+        status: 'pending',
+        scriptUsesResearchNotes: false,
+        sourceNotesAreLeadsOnly: true,
+        checklist: [
+          'Open the original source and review the relevant passage.',
+          'Confirm each factual claim is supported by the source.',
+          'Check the publication date and context for time-sensitive claims.',
+          'Revise the template script using only verified evidence before approval.'
+        ]
+      },
       status: 'draft',
       approvalRequired: true,
       published: false
