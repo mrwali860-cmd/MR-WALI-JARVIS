@@ -31,12 +31,27 @@ function buildDraftPipeline({ brand, audience, goal, platform = 'youtube-shorts'
       platform: slot.platform,
       goal: slot.objective
     });
+    const researchContext = researchRecord.results
+      .filter(source => slot.sourceUrls.includes(source.url))
+      .map(source => ({
+        title: source.title,
+        url: source.url,
+        notes: typeof source.notes === 'string' ? source.notes : '',
+        score: Number.isFinite(source.score) ? source.score : null
+      }));
     const linked = {
       ...draft,
       strategyId: strategy.id,
       researchId: researchRecord.id,
       strategySlot: slot.slot,
       sourceUrls: slot.sourceUrls,
+      researchContext,
+      researchVerification: {
+        status: 'unverified_search_leads',
+        originalSourceOpened: false,
+        claimsVerified: false,
+        requiredBeforePublishing: true
+      },
       status: 'draft',
       approvalRequired: true,
       published: false
