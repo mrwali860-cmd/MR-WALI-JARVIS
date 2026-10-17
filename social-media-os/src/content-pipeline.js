@@ -32,10 +32,10 @@ function buildDraftPipeline({ brand, audience, goal, platform = 'youtube-shorts'
       goal: slot.objective
     });
     const researchContext = researchRecord.results
-      .filter(source => slot.sourceUrls.includes(source.url))
+      .filter(source => slot.sourceUrls.includes(new URL(source.url).href))
       .map(source => ({
         title: source.title,
-        url: source.url,
+        url: new URL(source.url).href,
         notes: typeof source.notes === 'string' ? source.notes : '',
         score: Number.isFinite(source.score) ? source.score : null
       }));
